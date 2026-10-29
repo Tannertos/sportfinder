@@ -320,7 +320,13 @@ function toItem(el){
   if(t.leisure==="swimming_pool"&&!t.name)return null; // Gartenpools
   const type=classify(t),S=SPORTS[state.sport],sp=S.label.split(/ [&(]/)[0];
   const kindLabel=LEIS[t.leisure]||AMEN[t.amenity]||(t.club?"Verein":"Anlage");
-  const name=t.name||t.operator||(t.leisure==="pitch"&&S.pitch?`${sp}platz`:`${kindLabel} · ${sp}`);
+  const base=t.leisure==="pitch"?(S.pitch?`${sp}platz`:`Platz · ${sp}`):`${kindLabel} · ${sp}`;
+  // Namenlose Orte: Umfeld (Schulhof, Spielplatz …), Verein in der Nähe oder Straße dazuschreiben
+  const c=t._ctx,st=t._street,ck=t._ctxkind;
+  const where=ck==="schule"?"Schulhof"+(c?" "+c:""):ck==="spielplatz"?"Spielplatz"+(c?" "+c:st?" "+st:""):
+    ck==="park"?(c||"Park"+(st?" "+st:"")):ck==="anlage"?(c||"Sportanlage"+(st?" "+st:"")):"";
+  const suffix=t._club||where||st||"";
+  const name=t.name||t.operator||(suffix?`${base} – ${suffix}`:base);
   const tags=[];
   if(t.leisure&&LEIS[t.leisure])tags.push(LEIS[t.leisure]);else if(AMEN[t.amenity])tags.push(AMEN[t.amenity]);
   if(t.surface)tags.push(SURF[t.surface]||t.surface);
@@ -328,7 +334,14 @@ function toItem(el){
   if(t.hoops)tags.push(t.hoops+(t.hoops==="1"?" Korb":" Körbe"));
   if(t.covered==="yes"||t.indoor==="yes")tags.push("überdacht");
   if(t.fee==="no")tags.push("kostenlos");
+  if(ck==="schule")tags.push("Schulgelände");else if(ck==="spielplatz")tags.push("Spielplatz");
   const info={};
+  if(!t.name&&!t.operator){
+    if(ck==="schule")info.Lage=(c?"Schulhof "+c:"Schulgelände")+" (meist nur außerhalb der Schulzeit nutzbar)";
+    else if(where)info.Lage=where;
+    if(st)info["Straße in der Nähe"]=st;
+    if(t._club)info["Verein in der Nähe"]=t._club;
+  }
   const street=[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" ");
   const addr=[street,[t["addr:postcode"],t["addr:city"]].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   if(addr)info.Adresse=addr;
@@ -337,7 +350,7 @@ function toItem(el){
   if(t.access)info.Zugang={yes:"öffentlich",permissive:"geduldet",private:"privat",members:"nur Mitglieder",customers:"nur Kunden",no:"kein Zugang",destination:"öffentlich"}[t.access]||t.access;
   if(t.fee)info.Kosten=t.fee==="no"?"kostenlos":t.fee==="yes"?"kostenpflichtig":t.fee;
   const phone=t.phone||t["contact:phone"]; if(phone)info.Telefon=phone;
-  return {id:el.type[0]+el.id,type,name,lat,lon,tags,info,web:safeUrl(t.website||t["contact:website"]||t.url),osm:`https://www.openstreetmap.org/${el.type}/${el.id}`,named:!!t.name};
+  return {id:el.type[0]+el.id,type,name,lat,lon,tags,info,web:safeUrl(t.website||t["contact:website"]||t.url),osm:`https://www.openstreetmap.org/${el.type}/${el.id}`,named:!!t.name,base:(!t.name&&!t.operator&&!t._club&&ck!=="schule"&&ck!=="spielplatz")?base:null};
 }
 
 /* ---------- Offene Daten: Kacheln aus Overture/Foursquare (monatlich erzeugt) ---------- */
@@ -380,6 +393,14 @@ function mergePlaces(osm,open){
       if(o.type==="verein")twin.type="verein";
       twin.src+=" + "+o.src;
     }else out.push(o);
+  }
+  // Namenlose Anlagen ohne Vereinsangabe: Verein mit gleicher Sportart in bis zu 250 m nennen
+  const clubs=open.filter(o=>o.type==="verein");
+  for(const x of out){
+    if(!x.base||x.named)continue;
+    let near=null;
+    for(const o of clubs){const d=km(x.lat,x.lon,o.lat,o.lon)*1000;if(d<=250&&(!near||d<near.d))near={d,o}}
+    if(near){x.name=`${x.base} – ${near.o.name}`;x.info["Verein in der Nähe"]=near.o.name}
   }
   return out;
 }
