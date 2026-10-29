@@ -1,0 +1,545 @@
+<meta charset="utf-8">
+<title>Sportfinder Ruhr</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: ein Satz als Suchmaske oben, darunter Ergebnisliste + schematische Karte (Spielfeld-Linien als Motiv) */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --ink:#14202b; --muted:#5b6876; --line:#d4dbe2;
+  --court:#1d3a57; --court-ink:#f3f6f9; --accent:#e8692a; --accent-soft:#fbe3d6;
+  --club:#2f6fd1; --free:#1f9a62; --book:#a35bd6;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e161e; --surface:#16212c; --ink:#e7edf2; --muted:#93a1ae; --line:#283746;
+  --court:#13283d; --court-ink:#e7edf2; --accent:#f07f45; --accent-soft:#3a2418;
+  --club:#6fa2f0; --free:#4fc68d; --book:#c595ea; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e161e; --surface:#16212c; --ink:#e7edf2; --muted:#93a1ae; --line:#283746;
+  --court:#13283d; --court-ink:#e7edf2; --accent:#f07f45; --accent-soft:#3a2418;
+  --club:#6fa2f0; --free:#4fc68d; --book:#c595ea; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.band{background:var(--court);color:var(--court-ink);position:relative;overflow:hidden}
+.band::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border:3px solid rgba(255,255,255,.12);border-radius:50%;pointer-events:none}
+.band::before{content:"";position:absolute;right:60px;top:-30px;bottom:-30px;width:3px;background:rgba(255,255,255,.08);pointer-events:none}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.band .wrap{padding-block:22px 26px;position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:.04em;text-transform:uppercase}
+.brand i{width:22px;height:22px;border-radius:50%;background:var(--accent);display:inline-block;position:relative}
+.brand i::after{content:"";position:absolute;inset:0;border-radius:50%;background:linear-gradient(transparent 46%,rgba(0,0,0,.35) 46% 54%,transparent 54%),linear-gradient(90deg,transparent 46%,rgba(0,0,0,.35) 46% 54%,transparent 54%)}
+.demo{margin-left:auto;font-family:var(--body);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1px solid rgba(255,255,255,.35);padding:3px 9px;border-radius:99px}
+.ask{margin-top:18px;font-family:var(--display);font-weight:700;font-size:clamp(30px,6vw,52px);line-height:1.08;text-transform:uppercase;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.ask select,.ask input{font:inherit;color:var(--court-ink);background:transparent;border:0;border-bottom:3px solid var(--accent);padding:0 2px;text-transform:uppercase;min-width:0;max-width:100%}
+.ask select{cursor:pointer;appearance:none;padding-right:26px;background:linear-gradient(45deg,transparent 50%,var(--accent) 50%) right 8px center/9px 9px no-repeat,linear-gradient(-45deg,transparent 50%,var(--accent) 50%) right 0 center/9px 9px no-repeat}
+.ask select option{color:#14202b;background:#fff;font-size:16px;text-transform:none}
+.ask select:focus-visible,.ask input:focus-visible{outline:2px dashed var(--accent);outline-offset:4px}
+.free-text{margin-top:16px;display:flex;gap:8px;max-width:560px}
+.free-text input{flex:1;min-width:0;font:inherit;font-size:15px;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:var(--court-ink)}
+.free-text input::placeholder{color:rgba(243,246,249,.6)}
+.free-text button{font:inherit;font-weight:600;padding:10px 16px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+.free-text button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.hint{font-size:13px;opacity:.75;margin-top:6px;min-height:20px}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding-block:16px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:inherit;font-size:14px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;display:flex;align-items:center;gap:7px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg button:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.radius{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.radius input{accent-color:var(--accent);width:140px}
+.radius b{font-family:var(--mono);color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;min-width:52px}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:20px;padding-bottom:40px}
+@media (max-width:860px){.main{grid-template-columns:1fr}.mapbox{order:-1}}
+.count{font-family:var(--display);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px}
+.count span{color:var(--muted);font-family:var(--body);font-weight:500;font-size:14px;text-transform:none;letter-spacing:0;margin-left:6px}
+.list{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.card[aria-expanded="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .kind{grid-row:1/3;width:38px;height:38px;border-radius:9px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px;color:#fff}
+.card h3{margin:0;font-size:16px;font-weight:700;line-height:1.3;text-wrap:balance}
+.card .meta{font-size:13px;color:var(--muted)}
+.card .km{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.card .km small{display:block;color:var(--muted);font-family:var(--body);font-size:12px}
+.tags{grid-column:2/4;display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)}
+.tag.hot{background:var(--accent-soft);color:var(--accent)}
+.detail{grid-column:2/4;margin-top:8px;padding-top:10px;border-top:1px dashed var(--line);font-size:14px;display:grid;gap:6px}
+.detail dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+.detail dt{color:var(--muted)}
+.detail dd{margin:0}
+.detail a{color:var(--accent);font-weight:600}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:24px;color:var(--muted)}
+
+.mapbox{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);align-self:start;background:var(--court);border-radius:14px;padding:12px;color:var(--court-ink)}
+.mapbox svg{display:block;width:100%;height:auto;max-width:100%}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;padding:8px 4px 2px;opacity:.85}
+.maplegend span{display:flex;align-items:center;gap:6px}
+.mapnote{font-size:12px;opacity:.6;padding:2px 4px}
+.pin{cursor:pointer}
+.pin:focus-visible circle{stroke:var(--accent);stroke-width:3}
+footer{font-size:13px;color:var(--muted);padding-block:0 32px}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .15s}.pin circle{transition:r .15s}}
+</style>
+<style>
+.ask .place{width:12ch}
+.status{display:flex;gap:10px;align-items:flex-start;font-size:14px;border-radius:10px;padding:10px 14px;margin-top:16px;background:var(--surface);border:1px solid var(--line)}
+.status.live{border-color:var(--free)}
+.status.demo{border-color:var(--accent)}
+.status b{white-space:nowrap}
+.locbtn{font:inherit;font-size:14px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.locbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#leaf{height:460px;border-radius:10px;overflow:hidden;background:var(--bg)}
+#leaf[hidden],#map[hidden]{display:none!important}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;vertical-align:-2px}
+@media (prefers-reduced-motion:no-preference){.spinner{animation:spin .8s linear infinite}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.osm{font-size:12px;opacity:.7;padding:2px 4px}
+.osm a{color:inherit}
+</style>
+
+<div class="band">
+  <div class="wrap">
+    <div class="brand"><i aria-hidden="true"></i>Sportfinder <span class="demo" id="modeBadge">Deutschland</span></div>
+    <div class="ask" role="group" aria-label="Suche">
+      <span>Ich will</span>
+      <select id="sport" aria-label="Sportart"></select>
+      <span>spielen in</span>
+      <input id="ort" class="place" list="orte" value="Essen-Rüttenscheid" placeholder="Stadt / PLZ" aria-label="Ort oder Stadtteil" autocomplete="off">
+      <datalist id="orte"></datalist>
+    </div>
+    <form class="free-text" id="freeForm">
+      <input id="free" type="text" placeholder="Oder einfach tippen: „Yoga in Bochum“" aria-label="Freitext-Suche">
+      <button type="submit">Finden</button>
+    </form>
+    <div class="hint" id="hint" aria-live="polite"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="status" id="status" aria-live="polite"><span class="spinner" aria-hidden="true"></span><span>Lade echte Daten aus OpenStreetMap …</span></div>
+  <div class="controls">
+    <div class="seg" id="typeSeg" role="group" aria-label="Art des Angebots"></div>
+    <label class="radius" for="radius">Umkreis <input id="radius" type="range" min="1" max="15" step="1" value="5"> <b id="radiusOut">5 km</b></label>
+    <button type="button" class="locbtn" id="locBtn">Mein Standort</button>
+  </div>
+  <div class="main">
+    <section aria-label="Ergebnisse">
+      <div class="count" id="count"></div>
+      <div class="list" id="list"></div>
+    </section>
+    <aside class="mapbox" aria-label="Karte">
+      <div id="leaf" hidden></div>
+      <svg id="map" viewBox="0 0 600 520" role="img" aria-label="Schematische Karte mit Ergebnissen"></svg>
+      <div class="maplegend">
+        <span><i class="dot" style="background:var(--club)"></i>Verein</span>
+        <span><i class="dot" style="background:var(--free)"></i>Freier Platz</span>
+        <span><i class="dot" style="background:var(--book)"></i>Studio / Halle</span>
+        <span><i class="dot" style="background:var(--accent)"></i>Dein Standort</span>
+      </div>
+      <div class="osm" id="osmNote">Daten © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>-Mitwirkende (ODbL) · Orte © Overture Maps Foundation · Foursquare OS Places</div>
+    </aside>
+  </div>
+  <footer id="foot">Plätze und Hallen kommen live aus OpenStreetMap, Studios und Vereine aus den offenen Datensätzen von Overture Maps und Foursquare (monatlich aktualisiert). Kurszeiten und Preise fehlen dort; die Einordnung „Verein / Platz / Studio“ wird aus den Daten abgeleitet.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// Katalog: osm = Werte des OSM-Tags "sport"; extra = zusätzliche Kartenfilter; name = Suche im Namen (für Studios ohne sport-Tag)
+const GROUPS=[
+ ["Ballsport",true,[
+  ["basketball","Basketball",{osm:"basketball",keys:["basketball","streetball","basket","korb"]}],
+  ["fussball","Fußball",{osm:"soccer",keys:["fußball","fussball","kicken","bolzen","soccer"]}],
+  ["volleyball","Volleyball",{osm:"volleyball|beachvolleyball",keys:["volleyball","beachvolleyball","beach"]}],
+  ["handball","Handball",{osm:"handball",keys:["handball"]}],
+  ["hockey","Hockey",{osm:"field_hockey|hockey",keys:["hockey","feldhockey","hallenhockey"]}],
+  ["rugby","Rugby",{osm:"rugby|rugby_union|rugby_league",keys:["rugby"]}],
+  ["football","American Football",{osm:"american_football",keys:["american football","football"]}],
+  ["baseball","Baseball & Softball",{osm:"baseball|softball",keys:["baseball","softball"]}],
+  ["cricket","Cricket",{osm:"cricket",keys:["cricket"]}]
+ ]],
+ ["Schlägersport",true,[
+  ["tennis","Tennis",{osm:"tennis",keys:["tennis"]}],
+  ["tischtennis","Tischtennis",{osm:"table_tennis",keys:["tischtennis","ping pong","pingpong","platte"]}],
+  ["badminton","Badminton",{osm:"badminton",keys:["badminton","federball"]}],
+  ["padel","Padel",{osm:"padel",keys:["padel"]}],
+  ["squash","Squash",{osm:"squash",keys:["squash"]}]
+ ]],
+ ["Fitness & Kurse",false,[
+  ["fitness","Fitnessstudio",{osm:"fitness|weightlifting|bodybuilding",extra:['["leisure"="fitness_centre"]'],keys:["fitness","fitnessstudio","gym","krafttraining","muckibude"]}],
+  ["yoga","Yoga",{osm:"yoga",name:"yoga",keys:["yoga"]}],
+  ["pilates","Pilates",{osm:"pilates",name:"pilates",keys:["pilates"]}],
+  ["crossfit","CrossFit & Functional",{osm:"crossfit",name:"crossfit|functional",keys:["crossfit","functional"]}],
+  ["calisthenics","Calisthenics & Outdoor-Fitness",{osm:"calisthenics|fitness_station",extra:['["leisure"="fitness_station"]'],keys:["calisthenics","outdoor fitness","outdoor-fitness","trimm","klimmzug"]}],
+  ["tanzen","Tanzen",{osm:"dance|ballet",extra:['["amenity"="dancing_school"]','["leisure"="dance"]'],name:"tanzschule|tanzstudio|dance studio|ballettschule|zumba",keys:["tanzen","tanz","tanzkurs","zumba","ballett","salsa","hip hop"]}],
+  ["trampolin","Trampolin",{osm:"trampoline",extra:['["leisure"="trampoline_park"]'],keys:["trampolin"]}]
+ ]],
+ ["Kampfsport",false,[
+  ["kampfsport","Kampfsport (alle)",{osm:"martial_arts|karate|judo|taekwondo|aikido|jiu-jitsu|ju-jitsu|kickboxing|boxing|wrestling|mma|kung_fu|krav_maga|muay_thai|wing_chun|capoeira",name:"kampfsport|martial arts|dojo",keys:["kampfsport","selbstverteidigung","mma","krav maga","kung fu","jiu jitsu","jiu-jitsu","ju-jutsu","wing chun"]}],
+  ["boxen","Boxen & Kickboxen",{osm:"boxing|kickboxing|muay_thai",name:"boxen|boxing|boxclub|boxgym",keys:["boxen","kickboxen","thaiboxen","muay thai","boxing"]}],
+  ["judo","Judo",{osm:"judo",keys:["judo"]}],
+  ["karate","Karate",{osm:"karate",keys:["karate"]}],
+  ["taekwondo","Taekwondo",{osm:"taekwondo",keys:["taekwondo"]}],
+  ["fechten","Fechten",{osm:"fencing",keys:["fechten"]}]
+ ]],
+ ["Wassersport",false,[
+  ["schwimmen","Schwimmen",{osm:"swimming",extra:['["leisure"="swimming_pool"]["name"]','["leisure"="water_park"]','["leisure"="bathing_place"]'],keys:["schwimmen","schwimmbad","hallenbad","freibad","baden"]}],
+  ["rudern","Rudern",{osm:"rowing",keys:["rudern"]}],
+  ["kanu","Kanu & Kajak",{osm:"canoe|kayak",keys:["kanu","kajak","paddeln"]}],
+  ["sup","Stand-Up-Paddling",{osm:"stand_up_paddleboarding|paddle_boarding|sup",name:"sup",keys:["sup","stand up","stand-up"]}],
+  ["segeln","Segeln",{osm:"sailing",keys:["segeln"]}],
+  ["tauchen","Tauchen",{osm:"scuba_diving|diving|free_diving",keys:["tauchen"]}]
+ ]],
+ ["Outdoor & Rollsport",false,[
+  ["laufen","Laufen & Leichtathletik",{osm:"running|athletics|jogging",keys:["laufen","joggen","leichtathletik","laufbahn","running"]}],
+  ["radsport","Radsport, BMX & Pumptrack",{osm:"cycling|bmx|mtb|pumptrack",keys:["radsport","rennrad","bmx","pumptrack","mountainbike","mtb","radfahren"]}],
+  ["skaten","Skaten & Inline",{osm:"skateboard|roller_skating|inline_skates|scooter",keys:["skaten","skate","skateboard","skatepark","inliner","inline","rollschuh"]}],
+  ["klettern","Klettern & Bouldern",{osm:"climbing|bouldering|climbing_adventure",name:"boulder|kletter",keys:["klettern","bouldern","boulder","kletterhalle","hochseilgarten"]}],
+  ["golf","Golf",{osm:"golf",extra:['["leisure"="golf_course"]'],keys:["golf"]}],
+  ["minigolf","Minigolf & Adventure-Golf",{osm:"miniature_golf",extra:['["leisure"="miniature_golf"]'],keys:["minigolf","adventure golf","adventuregolf","schwarzlicht"]}],
+  ["discgolf","Disc Golf",{osm:"disc_golf",keys:["disc golf","discgolf","frisbee"]}],
+  ["reiten","Reiten",{osm:"equestrian",extra:['["leisure"="horse_riding"]'],keys:["reiten","reitstall","pferd"]}],
+  ["eislaufen","Eislaufen & Eishockey",{osm:"ice_skating|ice_hockey",extra:['["leisure"="ice_rink"]'],keys:["eislaufen","schlittschuh","eishockey","eishalle"]}],
+  ["bogen","Bogenschießen",{osm:"archery",keys:["bogenschießen","bogenschiessen","bogen"]}],
+  ["schiessen","Schießsport",{osm:"shooting",keys:["schießen","schiessen","schützenverein","schießsport"]}]
+ ]],
+ ["Freizeit & Präzision",false,[
+  ["bowling","Bowling & Kegeln",{osm:"bowling|10pin|9pin",extra:['["leisure"="bowling_alley"]'],keys:["bowling","kegeln","kegelbahn"]}],
+  ["boule","Boule & Boccia",{osm:"boules|petanque|bocce",keys:["boule","boules","boccia","petanque"]}],
+  ["billard","Billard",{osm:"billiards",keys:["billard","pool billard","snooker"]}],
+  ["darts","Darts",{osm:"darts",keys:["darts","dart"]}],
+  ["schach","Schach",{osm:"chess",keys:["schach"]}]
+ ]]
+];
+const SPORTS={};
+GROUPS.forEach(([g,pitch,list])=>list.forEach(([k,label,o])=>SPORTS[k]={label,group:g,pitch,...o}));
+const ORTE={
+  "Essen-Rüttenscheid":[51.437,7.006],"Essen-Innenstadt":[51.456,7.012],"Essen-Holsterhausen":[51.446,6.985],
+  "Essen-Frohnhausen":[51.452,6.968],"Essen-Borbeck":[51.475,6.950],"Essen-Altenessen":[51.492,7.012],
+  "Essen-Steele":[51.450,7.078],"Essen-Kray":[51.467,7.073],"Essen-Werden":[51.388,7.004],
+  "Essen-Kettwig":[51.362,6.948],"Essen-Bredeney":[51.408,6.990],"Essen-Überruhr":[51.423,7.070],
+  "Berlin":[52.5200,13.4050],"Hamburg":[53.5511,9.9937],"München":[48.1374,11.5755],"Köln":[50.9375,6.9603],
+  "Frankfurt am Main":[50.1109,8.6821],"Stuttgart":[48.7758,9.1829],"Düsseldorf":[51.2277,6.7735],"Leipzig":[51.3397,12.3731],
+  "Bremen":[53.0793,8.8017],"Dresden":[51.0504,13.7373],"Hannover":[52.3759,9.7320],"Nürnberg":[49.4521,11.0767],
+  "Bielefeld":[52.0302,8.5325],"Bonn":[50.7374,7.0982],"Münster":[51.9607,7.6261],"Mannheim":[49.4875,8.4660],
+  "Karlsruhe":[49.0069,8.4037],"Augsburg":[48.3705,10.8978],"Wiesbaden":[50.0782,8.2398],"Freiburg im Breisgau":[47.9990,7.8421],
+  "Kiel":[54.3233,10.1228],"Rostock":[54.0924,12.0991],"Mainz":[49.9929,8.2473],"Aachen":[50.7753,6.0839],
+  "Bochum":[51.4818,7.2162],"Dortmund":[51.5136,7.4653],"Duisburg":[51.4344,6.7623],"Gelsenkirchen":[51.5177,7.0857],
+  "Oberhausen":[51.4963,6.8638],"Mülheim an der Ruhr":[51.4275,6.8825],"Bottrop":[51.5236,6.9285],"Herne":[51.5369,7.2009],
+  "Recklinghausen":[51.6141,7.1979],"Hagen":[51.3671,7.4633],"Gladbeck":[51.5728,6.9858],"Hattingen":[51.3997,7.1859]
+};
+const TYPES={verein:{label:"Vereine",one:"Verein",short:"V",color:"--club"},platz:{label:"Freie Plätze",one:"Freier Platz",short:"P",color:"--free"},buchbar:{label:"Studios & Hallen",one:"Studio / Halle",short:"H",color:"--book"}};
+const AMEN={dancing_school:"Tanzschule",community_centre:"Gemeindezentrum",school:"Schule"};
+const SURF={asphalt:"Asphalt",concrete:"Beton",tartan:"Tartan",artificial_turf:"Kunstrasen",grass:"Rasen",clay:"Sand (Asche)",sand:"Sand",acrylic:"Kunststoff",rubber:"Gummi",paving_stones:"Pflaster",wood:"Holz",compacted:"Wassergebunden",synthetic:"Kunststoff",dirt:"Erde",gravel:"Kies",paved:"befestigt"};
+const LEIS={fitness_station:"Outdoor-Fitness",dance:"Tanzfläche",golf_course:"Golfplatz",miniature_golf:"Minigolf",horse_riding:"Reitanlage",bowling_alley:"Bowlingcenter",trampoline_park:"Trampolinpark",bathing_place:"Badestelle",marina:"Hafen",pitch:"Platz",sports_centre:"Sportanlage",sports_hall:"Sporthalle",stadium:"Stadion",fitness_centre:"Studio",swimming_pool:"Schwimmbad",water_park:"Bad",track:"Laufbahn",playground:"Spielplatz",ice_rink:"Eishalle"};
+
+// Demo-Daten (nur wenn Live-Daten blockiert sind, z. B. in der Claude-Vorschau)
+const DEMO=[
+ ["basketball","platz","Streetball-Court am Stadtpark","Essen-Rüttenscheid",.004,-.006,["2 Körbe","Asphalt","Flutlicht"]],
+ ["basketball","platz","Court an der Gesamtschule","Essen-Holsterhausen",-.002,.003,["Full Court","Kunststoff"]],
+ ["basketball","verein","BC Ruhrkorb 1972 e.V.","Essen-Frohnhausen",.003,.004,["Probetraining"]],
+ ["basketball","buchbar","Sporthalle Kray","Essen-Kray",.012,-.03,["Halle"]],
+ ["fussball","verein","SV Borbeck-Nord 1919","Essen-Borbeck",.002,.003,["Kunstrasen"]],
+ ["fussball","platz","Bolzplatz Kruppwald","Essen-Holsterhausen",.006,-.004,["Rasen"]],
+ ["tischtennis","platz","Tischtennisplatten Stadtgarten","Essen-Innenstadt",-.004,.003,["2 Platten"]],
+ ["tennis","verein","TC Bredeney Grün-Weiß","Essen-Bredeney",.002,-.003,["Sandplätze"]],
+ ["padel","buchbar","Padel Club Essen-Süd","Essen-Rüttenscheid",-.007,.01,["4 Courts"]],
+ ["skaten","platz","Skatepark Innenstadt-Nord","Essen-Innenstadt",.007,-.002,["Bowl"]]
+].map((r,i)=>({id:"d"+i,sport:r[0],type:r[1],name:r[2],lat:ORTE[r[3]][0]+r[4],lon:ORTE[r[3]][1]+r[5],tags:r[6],info:{Hinweis:"Beispieldatensatz"},addr:r[3]}));
+
+const $=id=>document.getElementById(id);
+const IS_APPLE=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const state={sport:store.get("sf_sport")||"basketball",place:store.get("sf_place")||"Essen-Rüttenscheid",center:null,types:new Set(["verein","platz","buchbar"]),radius:5,open:null,mode:"loading",items:[],fetched:null,reqId:0};
+if(!SPORTS[state.sport])state.sport="basketball";
+
+$("sport").innerHTML=GROUPS.map(([g,,list])=>`<optgroup label="${g}">${list.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</optgroup>`).join("");
+$("orte").innerHTML=Object.keys(ORTE).map(o=>`<option value="${o}">`).join("");
+$("typeSeg").innerHTML=Object.entries(TYPES).map(([k,t])=>`<button type="button" data-t="${k}" aria-pressed="true"><i class="dot" style="background:var(${t.color})"></i>${t.label}</button>`).join("");
+$("ort").value=state.place;
+
+function km(a,b,c,d){const R=6371,r=Math.PI/180,x=(c-a)*r,y=(d-b)*r;const h=Math.sin(x/2)**2+Math.cos(a*r)*Math.cos(c*r)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+const fmt=n=>n.toLocaleString("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1})+" km";
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const safeUrl=u=>{if(!u)return null;if(!/^https?:\/\//i.test(u))u="https://"+u;try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:null}catch(e){return null}};
+
+function setStatus(kind,html){const s=$("status");s.className="status "+(kind||"");s.innerHTML=html}
+
+/* ---------- Ort finden ---------- */
+async function geocode(q){
+  const key=Object.keys(ORTE).find(o=>o.toLowerCase()===q.toLowerCase().trim());
+  if(key)return {lat:ORTE[key][0],lon:ORTE[key][1],label:key};
+  const r=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=de&accept-language=de&q="+encodeURIComponent(q));
+  if(!r.ok)throw new Error("geo");
+  const j=await r.json(); if(!j.length)return null;
+  return {lat:+j[0].lat,lon:+j[0].lon,label:j[0].display_name.split(",").slice(0,2).join(",")};
+}
+
+/* ---------- OpenStreetMap abfragen ---------- */
+const ENDPOINTS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+async function overpass(sportKey,lat,lon,radiusKm){
+  const S=SPORTS[sportKey],ar=`(around:${Math.round(radiusKm*1000)},${lat.toFixed(5)},${lon.toFixed(5)})`;
+  const parts=[`nwr["sport"~"^(.*;)?(${S.osm})(;.*)?$"]${ar};`];
+  (S.extra||[]).forEach(f=>parts.push(`nwr${f}${ar};`));
+  if(S.name)["leisure","amenity","club"].forEach(k=>parts.push(`nwr["name"~"${S.name}",i]["${k}"]${ar};`));
+  const q=`[out:json][timeout:25];(${parts.join("")});out center tags 400;`;
+  let last;
+  for(const ep of ENDPOINTS){
+    try{const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});
+      if(!r.ok){last=new Error("HTTP "+r.status);continue}
+      return (await r.json()).elements||[];
+    }catch(e){last=e}
+  }
+  throw last||new Error("overpass");
+}
+const CLUBNAME=/(\be\.\s?v\.|verein|\b(tus|sv|tv|sc|djk|bc|ttc|tc|vfl|vfb|spvgg|fc|tsv|ssv|bv|sg|tg|ttv|bsv|esv|htc|thc|rw|sf)\b)/i;
+function classify(t){
+  if(t.club==="sport"||t.club)return "verein";
+  if(CLUBNAME.test(t.name||"")||CLUBNAME.test(t.operator||""))return "verein";
+  if(["pitch","track","playground","fitness_station","bathing_place"].includes(t.leisure)){
+    if(["private","members","no"].includes(t.access))return "verein";
+    if(t.fee==="yes")return "buchbar";
+    return "platz";
+  }
+  return "buchbar";
+}
+function toItem(el){
+  const t=el.tags||{},lat=el.lat??el.center?.lat,lon=el.lon??el.center?.lon;
+  if(lat==null)return null;
+  if(t.access==="private"&&!t.name&&!t.operator)return null; // private Höfe ohne Infos überspringen
+  if(t.leisure==="swimming_pool"&&!t.name)return null; // Gartenpools
+  const type=classify(t),S=SPORTS[state.sport],sp=S.label.split(/ [&(]/)[0];
+  const kindLabel=LEIS[t.leisure]||AMEN[t.amenity]||(t.club?"Verein":"Anlage");
+  const name=t.name||t.operator||(t.leisure==="pitch"&&S.pitch?`${sp}platz`:`${kindLabel} · ${sp}`);
+  const tags=[];
+  if(t.leisure&&LEIS[t.leisure])tags.push(LEIS[t.leisure]);else if(AMEN[t.amenity])tags.push(AMEN[t.amenity]);
+  if(t.surface)tags.push(SURF[t.surface]||t.surface);
+  if(t.lit==="yes")tags.push("Flutlicht");
+  if(t.hoops)tags.push(t.hoops+(t.hoops==="1"?" Korb":" Körbe"));
+  if(t.covered==="yes"||t.indoor==="yes")tags.push("überdacht");
+  if(t.fee==="no")tags.push("kostenlos");
+  const info={};
+  const street=[t["addr:street"],t["addr:housenumber"]].filter(Boolean).join(" ");
+  const addr=[street,[t["addr:postcode"],t["addr:city"]].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  if(addr)info.Adresse=addr;
+  if(t.operator&&t.operator!==name)info.Betreiber=t.operator;
+  if(t.opening_hours)info.Öffnungszeiten=t.opening_hours;
+  if(t.access)info.Zugang={yes:"öffentlich",permissive:"geduldet",private:"privat",members:"nur Mitglieder",customers:"nur Kunden",no:"kein Zugang",destination:"öffentlich"}[t.access]||t.access;
+  if(t.fee)info.Kosten=t.fee==="no"?"kostenlos":t.fee==="yes"?"kostenpflichtig":t.fee;
+  const phone=t.phone||t["contact:phone"]; if(phone)info.Telefon=phone;
+  return {id:el.type[0]+el.id,type,name,lat,lon,tags,info,web:safeUrl(t.website||t["contact:website"]||t.url),osm:`https://www.openstreetmap.org/${el.type}/${el.id}`,named:!!t.name};
+}
+
+/* ---------- Offene Daten: Kacheln aus Overture/Foursquare (monatlich erzeugt) ---------- */
+const DATA_BASE="data/"; // liegt neben der App (GitHub Pages)
+const OPEN={index:undefined,tiles:new Map()};
+async function openIndex(){
+  if(OPEN.index!==undefined)return OPEN.index;
+  try{const r=await fetch(DATA_BASE+"index.json");OPEN.index=r.ok?await r.json():null}catch(e){OPEN.index=null}
+  return OPEN.index;
+}
+async function openPlaces(sportKey,lat,lon,radiusKm){
+  const idx=await openIndex(); if(!idx)return null;
+  const T=idx.tile||0.5,dLat=radiusKm/111.32,dLon=radiusKm/(111.32*Math.cos(lat*Math.PI/180));
+  const keys=[];
+  for(let a=Math.floor((lat-dLat)/T);a<=Math.floor((lat+dLat)/T);a++)
+    for(let b=Math.floor((lon-dLon)/T);b<=Math.floor((lon+dLon)/T);b++){const k=a+"_"+b;if(idx.tiles[k])keys.push(k)}
+  const rows=(await Promise.all(keys.map(async k=>{
+    if(!OPEN.tiles.has(k))OPEN.tiles.set(k,fetch(DATA_BASE+"tiles/"+k+".json").then(r=>r.ok?r.json():[]).catch(()=>[]));
+    return OPEN.tiles.get(k);
+  }))).flat();
+  const SRC={ov:"Overture Maps",fsq:"Foursquare"};
+  return rows.filter(r=>r[3].includes(sportKey)).map((r,i)=>{
+    const [name,la,lo,sports,type,web,tel,addr,src]=r,info={};
+    if(addr)info.Adresse=addr; if(tel)info.Telefon=tel;
+    return {id:"o"+la+lo+i,type,name,lat:la,lon:lo,tags:[],info,web:safeUrl(web),osm:null,named:true,
+      src:src.split(",").map(x=>SRC[x]||x).join(" + ")};
+  });
+}
+const normName=s=>(s||"").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/\b(e\.?\s?v\.?|gmbh|studio)\b/g,"").replace(/[^a-z0-9]/g,"");
+function mergePlaces(osm,open){
+  const out=osm.map(x=>({...x,src:"OpenStreetMap"}));
+  for(const o of open){
+    const k=normName(o.name);
+    const twin=out.find(x=>{const d=km(x.lat,x.lon,o.lat,o.lon)*1000;
+      if(d>200)return false; const xk=normName(x.name);
+      return (k&&xk&&(xk===k||(k.length>5&&(xk.includes(k)||k.includes(xk)))))||(!x.named&&d<40)});
+    if(twin){ // Angaben ergänzen statt doppelt anzeigen
+      if(!twin.named){twin.name=o.name;twin.named=true}
+      twin.web=twin.web||o.web; for(const[f,v]of Object.entries(o.info))if(!twin.info[f])twin.info[f]=v;
+      if(o.type==="verein")twin.type="verein";
+      twin.src+=" + "+o.src;
+    }else out.push(o);
+  }
+  return out;
+}
+async function fetchAll(lat,lon,radiusKm){
+  const [a,b]=await Promise.allSettled([overpass(state.sport,lat,lon,radiusKm),openPlaces(state.sport,lat,lon,radiusKm)]);
+  if(a.status!=="fulfilled"&&!(b.status==="fulfilled"&&b.value))throw new Error("offline");
+  const osm=a.status==="fulfilled"?a.value.map(toItem).filter(Boolean):[];
+  const seen=new Set();
+  const osmU=osm.filter(x=>{const k=x.name+"|"+x.lat.toFixed(3)+x.lon.toFixed(3);if(seen.has(k))return false;seen.add(k);return true});
+  const open=b.status==="fulfilled"&&b.value?b.value:[];
+  return {items:mergePlaces(osmU,open),nOsm:osmU.length,nOpen:open.length,osmOk:a.status==="fulfilled",openOk:!!(b.status==="fulfilled"&&b.value)};
+}
+function liveStatus(res,where){
+  const parts=[];if(res.osmOk)parts.push(`OpenStreetMap ${res.nOsm}`);if(res.openOk)parts.push(`Studios & Vereine ${res.nOpen}`);
+  setStatus("live",`<b>Live-Daten</b><span>${res.items.length} Einträge rund um ${esc(where)} (${parts.join(" · ")}${!res.osmOk?" · OpenStreetMap gerade nicht erreichbar":""}).</span>`);
+}
+
+/* ---------- Suche ---------- */
+async function search(){
+  const id=++state.reqId; state.open=null;
+  setStatus("",`<span class="spinner" aria-hidden="true"></span><span>Suche ${esc(SPORTS[state.sport].label)} in ${esc(state.place)} …</span>`);
+  try{
+    const g=await geocode(state.place);
+    if(id!==state.reqId)return;
+    if(!g){setStatus("demo",`<b>Ort nicht gefunden.</b><span>Probier eine Stadt, eine PLZ oder „Stadt Stadtteil“, z. B. „Hamburg Altona“.</span>`);return}
+    state.center=[g.lat,g.lon];
+    const fetchR=Math.max(state.radius,5);
+    const res=await fetchAll(g.lat,g.lon,fetchR);
+    if(id!==state.reqId)return;
+    state.items=res.items;
+    state.fetched={sport:state.sport,place:state.place,r:fetchR};
+    state.mode="live";
+    $("modeBadge").textContent="Live";
+    liveStatus(res,g.label);
+    initLeaflet(); render();
+  }catch(e){
+    if(id!==state.reqId)return;
+    goDemo();
+  }
+}
+function goDemo(){
+  state.mode="demo";
+  state.center=ORTE[state.place]||ORTE["Essen-Rüttenscheid"];
+  state.items=DEMO.filter(d=>d.sport===state.sport);
+  $("modeBadge").textContent="Prototyp · Demo-Daten";
+  setStatus("demo",`<b>Demo-Modus</b><span>Diese Vorschau darf keine externen Daten laden. Online (z. B. über GitHub Pages) kommen echte Daten für ganz Deutschland.</span>`);
+  render();
+}
+
+/* ---------- Anzeige ---------- */
+function results(){
+  if(!state.center)return [];
+  const [la,lo]=state.center;
+  return state.items.filter(d=>state.types.has(d.type)).map(d=>({...d,dist:km(la,lo,d.lat,d.lon)})).filter(d=>d.dist<=state.radius)
+    .sort((a,b)=>(a.dist-b.dist)-(b.named-a.named)*0.4);
+}
+function render(){
+  $("sport").value=state.sport;
+  $("radiusOut").textContent=state.radius+" km";
+  document.querySelectorAll("#typeSeg button").forEach(b=>b.setAttribute("aria-pressed",state.types.has(b.dataset.t)));
+  const res=results(),label=SPORTS[state.sport].label;
+  const n={verein:0,platz:0,buchbar:0};res.forEach(r=>n[r.type]++);
+  $("count").innerHTML=`${res.length} ${res.length===1?"Möglichkeit":"Möglichkeiten"} für ${esc(label)}<span>${n.verein} Vereine · ${n.platz} Plätze · ${n.buchbar} Studios & Hallen</span>`;
+  const shown=res.slice(0,120);
+  $("list").innerHTML=res.length?shown.map(r=>{
+    const t=TYPES[r.type],open=state.open===r.id,walk=Math.round(r.dist/4.8*60);
+    const dest=`${r.lat.toFixed(6)},${r.lon.toFixed(6)}`;
+    const gLink=`<a href="https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=walking" target="_blank" rel="noopener">Route in Google Maps →</a>`;
+    const aLink=`<a href="https://maps.apple.com/?daddr=${dest}&q=${encodeURIComponent(r.name)}&dirflg=w" target="_blank" rel="noopener">Route in Apple Karten →</a>`;
+    const routes=IS_APPLE?aLink+gLink:gLink+aLink;
+    return `<div class="card" role="button" tabindex="0" data-id="${r.id}" aria-expanded="${open}">
+      <span class="kind" style="background:var(${t.color})">${t.short}</span>
+      <h3>${esc(r.name)}</h3>
+      <span class="km">${fmt(r.dist)}<small>${walk<45?walk+" Min. zu Fuß":Math.round(r.dist/15*60)+" Min. Rad"}</small></span>
+      <span class="meta">${t.one}${r.info.Adresse?" · "+esc(r.info.Adresse):r.addr?" · "+esc(r.addr):""}</span>
+      <span class="tags">${r.type==="platz"?'<span class="tag hot">Einfach hingehen</span>':""}${r.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</span>
+      ${open?`<span class="detail">${Object.keys(r.info).length?`<dl>${Object.entries(r.info).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}${r.src?`<dt>Quelle</dt><dd>${esc(r.src)}</dd>`:""}</dl>`:`<span>Keine weiteren Angaben${r.src?" · Quelle: "+esc(r.src):""}.</span>`}
+        <span style="display:flex;flex-wrap:wrap;gap:14px">${routes}${r.web?`<a href="${esc(r.web)}" target="_blank" rel="noopener">Website →</a>`:""}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name+" "+(r.info.Adresse||r.lat.toFixed(5)+","+r.lon.toFixed(5)))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen (Google) →</a></span></span>`:""}
+    </div>`}).join("")+(res.length>shown.length?`<div class="empty">Die nächsten ${shown.length} von ${res.length} werden angezeigt. Verkleinere den Umkreis für eine kürzere Liste.</div>`:"")
+    :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`}</div>`;
+  if(state.mode==="live"&&leaf.map)drawLeaflet(res); else drawSvg(res);
+}
+
+/* Leaflet-Karte (nur im Live-Modus) */
+const leaf={map:null,layer:null,ring:null,me:null};
+function initLeaflet(){
+  if(leaf.map||!window.L)return;
+  if(!document.getElementById("leafcss")){const l=document.createElement("link");l.id="leafcss";l.rel="stylesheet";l.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";document.head.appendChild(l)}
+  $("leaf").hidden=false;$("map").hidden=true;
+  leaf.map=L.map("leaf",{zoomControl:true}).setView(state.center,13);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(leaf.map);
+  leaf.layer=L.layerGroup().addTo(leaf.map);
+}
+function drawLeaflet(res){
+  leaf.layer.clearLayers();
+  const acc=cssVar("--accent");
+  L.circle(state.center,{radius:state.radius*1000,color:acc,weight:1.5,fillOpacity:.06}).addTo(leaf.layer);
+  res.forEach(r=>{const on=state.open===r.id;
+    L.circleMarker([r.lat,r.lon],{radius:on?10:6,color:"#fff",weight:on?3:1.5,fillColor:cssVar(TYPES[r.type].color),fillOpacity:1})
+     .on("click",()=>toggle(r.id,true)).bindTooltip(r.name).addTo(leaf.layer)});
+  L.circleMarker(state.center,{radius:8,color:"#fff",weight:3,fillColor:acc,fillOpacity:1}).addTo(leaf.layer);
+  if(!state.open)leaf.map.fitBounds(L.latLng(state.center).toBounds(state.radius*2000),{padding:[10,10]});
+}
+/* Schematische Karte (Demo-Modus) */
+function drawSvg(res){
+  if(!state.center){$("map").innerHTML="";return}
+  const W=600,H=520,[la,lo]=state.center,spanKm=Math.max(state.radius,3)*2.4;
+  const kmLat=111.32,kmLon=111.32*Math.cos(la*Math.PI/180),pxPerKm=(H-60)/spanKm;
+  const X=x=>W/2+(x-lo)*kmLon*pxPerKm,Y=y=>H/2-(y-la)*kmLat*pxPerKm;
+  let s=`<rect x="6" y="6" width="${W-12}" height="${H-12}" rx="10" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="2"/>
+  <line x1="${W/2}" y1="6" x2="${W/2}" y2="${H-6}" stroke="rgba(255,255,255,.07)" stroke-width="2"/>`;
+  [1,2,5,10,15].filter(r=>r<=state.radius).forEach(r=>{s+=`<circle cx="${W/2}" cy="${H/2}" r="${r*pxPerKm}" fill="none" stroke="rgba(255,255,255,.14)" stroke-dasharray="4 6"/><text x="${W/2+r*pxPerKm*.707+4}" y="${H/2-r*pxPerKm*.707}" fill="currentColor" fill-opacity=".45" font-size="11" font-family="JetBrains Mono,monospace">${r} km</text>`});
+  s+=`<circle cx="${W/2}" cy="${H/2}" r="${state.radius*pxPerKm}" fill="var(--accent)" fill-opacity=".08" stroke="var(--accent)" stroke-opacity=".6" stroke-width="1.5"/>`;
+  Object.entries(ORTE).forEach(([n,[a,b]])=>{const x=X(b),y=Y(a);if(x>20&&x<W-20&&y>24&&y<H-10)s+=`<text x="${x}" y="${y-12}" text-anchor="middle" fill="currentColor" fill-opacity=".45" font-size="12" font-family="Figtree,sans-serif">${esc(n.replace("Essen-",""))}</text>`});
+  res.forEach(r=>{const on=state.open===r.id;s+=`<g class="pin" data-id="${r.id}" tabindex="0" role="button" aria-label="${esc(r.name)}"><circle cx="${X(r.lon)}" cy="${Y(r.lat)}" r="${on?11:7}" fill="var(${TYPES[r.type].color})" stroke="#fff" stroke-width="${on?3:1.5}"/></g>`});
+  s+=`<circle cx="${W/2}" cy="${H/2}" r="9" fill="var(--accent)" stroke="#fff" stroke-width="3"/>`;
+  $("map").innerHTML=s;
+}
+
+function toggle(id,fromMap){
+  state.open=state.open===id?null:id;render();
+  const el=document.querySelector(`.card[data-id="${id}"]`);
+  if(el&&state.open===id)el.scrollIntoView({block:"nearest",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  if(state.open===id&&leaf.map&&!fromMap){const r=state.items.find(x=>x.id===id);if(r)leaf.map.panTo([r.lat,r.lon])}
+}
+
+/* ---------- Events ---------- */
+$("list").addEventListener("click",e=>{const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id)});
+$("list").addEventListener("keydown",e=>{const c=e.target.closest(".card");if(c&&e.target===c&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(c.dataset.id)}});
+$("map").addEventListener("click",e=>{const p=e.target.closest(".pin");if(p)toggle(p.dataset.id)});
+$("map").addEventListener("keydown",e=>{const p=e.target.closest(".pin");if(p&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(p.dataset.id)}});
+function runSearch(){if(state.mode==="demo"){goDemo()}else search()}
+$("sport").addEventListener("change",e=>{state.sport=e.target.value;store.set("sf_sport",state.sport);$("hint").textContent="";runSearch()});
+$("ort").addEventListener("change",e=>{const v=e.target.value.trim();if(!v)return;state.place=v;store.set("sf_place",v);runSearch()});
+let rT;$("radius").addEventListener("input",e=>{state.radius=+e.target.value;render();
+  clearTimeout(rT);if(state.mode==="live"&&state.fetched&&state.radius>state.fetched.r)rT=setTimeout(search,600)});
+$("typeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const t=b.dataset.t;if(state.types.has(t)&&state.types.size>1)state.types.delete(t);else state.types.add(t);render()});
+$("locBtn").addEventListener("click",()=>{
+  if(!navigator.geolocation){$("hint").textContent="Standort ist in diesem Browser nicht verfügbar.";return}
+  $("hint").textContent="Standort wird ermittelt …";
+  navigator.geolocation.getCurrentPosition(p=>{
+    state.center=[p.coords.latitude,p.coords.longitude];state.place="Mein Standort";$("ort").value="Mein Standort";$("hint").textContent="";
+    if(state.mode==="demo"){$("hint").textContent="Im Demo-Modus gibt es nur Beispieldaten für Essen.";return}
+    searchAt(state.center);
+  },()=>{$("hint").textContent="Standort nicht freigegeben. Gib stattdessen einen Ort ein."},{timeout:10000});
+});
+async function searchAt(c){
+  const id=++state.reqId;state.open=null;
+  setStatus("",`<span class="spinner" aria-hidden="true"></span><span>Suche ${esc(SPORTS[state.sport].label)} in deiner Nähe …</span>`);
+  try{const fetchR=Math.max(state.radius,5);const res=await fetchAll(c[0],c[1],fetchR);if(id!==state.reqId)return;
+    state.items=res.items;state.fetched={r:fetchR};liveStatus(res,"deinen Standort");initLeaflet();render()}
+  catch(e){setStatus("demo",`<b>Keine Verbindung.</b><span>OpenStreetMap ist gerade nicht erreichbar. Versuch es gleich noch einmal.</span>`)}
+}
+// "Mein Standort" bei Suche neu ermitteln
+const _search=search;search=async function(){if(state.place==="Mein Standort"&&state.center&&state.mode==="live")return searchAt(state.center);return _search()};
+$("freeForm").addEventListener("submit",e=>{
+  e.preventDefault();const raw=$("free").value.trim(),q=raw.toLowerCase();if(!q)return;
+  let sp=null,best=0;for(const[k,s]of Object.entries(SPORTS))for(const w of [...s.keys,s.label.toLowerCase()])if(q.includes(w)&&w.length>best){best=w.length;sp=k}
+  const m=raw.match(/\b(?:in|bei|um|nahe)\s+(.+?)\s*(?:spielen|$)/i);
+  if(sp){state.sport=sp;store.set("sf_sport",sp)}
+  if(m){state.place=m[1].replace(/[.!?]+$/,"");$("ort").value=state.place;store.set("sf_place",state.place)}
+  $("hint").textContent=sp?`Verstanden: ${SPORTS[sp].label}${m?" in "+state.place:""}.`:"Diese Sportart kenne ich noch nicht. Probier z. B. Yoga, Padel, Boxen oder Klettern.";
+  if(sp||m)runSearch();
+});
+search();
+</script>
