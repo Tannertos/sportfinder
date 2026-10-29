@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Sportfinder Ruhr</title>
+<title>Sportfinder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -283,21 +283,24 @@ async function geocode(q){
 }
 
 /* ---------- OpenStreetMap abfragen ---------- */
-const ENDPOINTS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+const ENDPOINTS=["https://overpass-api.de/api/interpreter","https://overpass.private.coffee/api/interpreter","https://overpass.kumi.systems/api/interpreter"];
+const OSM_TIMEOUT=12000; // danach zeigt die App die übrigen Daten ohne OSM
 async function overpass(sportKey,lat,lon,radiusKm){
   const S=SPORTS[sportKey],ar=`(around:${Math.round(radiusKm*1000)},${lat.toFixed(5)},${lon.toFixed(5)})`;
   const parts=[`nwr["sport"~"^(.*;)?(${S.osm})(;.*)?$"]${ar};`];
   (S.extra||[]).forEach(f=>parts.push(`nwr${f}${ar};`));
   if(S.name)["leisure","amenity","club"].forEach(k=>parts.push(`nwr["name"~"${S.name}",i]["${k}"]${ar};`));
-  const q=`[out:json][timeout:25];(${parts.join("")});out center tags 400;`;
-  let last;
-  for(const ep of ENDPOINTS){
-    try{const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});
-      if(!r.ok){last=new Error("HTTP "+r.status);continue}
+  const q=`[out:json][timeout:20];(${parts.join("")});out center tags 400;`;
+  // alle Server gleichzeitig fragen, der erste mit Antwort gewinnt
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),OSM_TIMEOUT);
+  try{
+    return await Promise.any(ENDPOINTS.map(async ep=>{
+      const r=await fetch(ep,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"},signal:ctl.signal});
+      if(!r.ok)throw new Error("HTTP "+r.status);
       return (await r.json()).elements||[];
-    }catch(e){last=e}
-  }
-  throw last||new Error("overpass");
+    }));
+  }catch(e){throw new Error("overpass")}
+  finally{clearTimeout(timer);ctl.abort()}
 }
 const CLUBNAME=/(\be\.\s?v\.|verein|\b(tus|sv|tv|sc|djk|bc|ttc|tc|vfl|vfb|spvgg|fc|tsv|ssv|bv|sg|tg|ttv|bsv|esv|htc|thc|rw|sf)\b)/i;
 function classify(t){
