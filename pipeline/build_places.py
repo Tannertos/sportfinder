@@ -331,12 +331,17 @@ def dist_m(a, b):
     return math.hypot(dx, dy)
 
 
+CAT_STATS = defaultdict(lambda: defaultdict(int))  # Sportart -> Kategorie -> Anzahl (zum Nachschärfen)
+
+
 def build(records):
     items = []
     for r in records:
         sp = sports_for(r["cat"], r["name"])
         if not sp:
             continue
+        for k in sp:
+            CAT_STATS[k][f'{r["src"]}: {r["cat"]}'[:120]] += 1
         r["s"] = sp
         r["t"] = type_for(r["cat"], r["name"])
         r["k"] = norm(r["name"])
@@ -412,6 +417,10 @@ def main():
     except Exception as ex:  # Foursquare ist optional – Fehler stoppen den Lauf nicht
         print(f"Foursquare: Fehler, übersprungen ({ex})", file=sys.stderr)
     write_tiles(build(recs), args.out)
+    # Auswertung: welche Kategorien landen bei welcher Sportart (Top 40)
+    stats = {k: dict(sorted(v.items(), key=lambda x: -x[1])[:40]) for k, v in sorted(CAT_STATS.items())}
+    with open(os.path.join(args.out, "kategorien.json"), "w", encoding="utf-8") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=1)
     print(f"Fertig in {time.time() - t0:.0f} s")
 
 
