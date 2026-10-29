@@ -2,36 +2,39 @@
 
 Eine Web-App, in der man eine Sportart wählt (Basketball, Yoga, Boxen …) und alle Möglichkeiten in der Nähe sieht: Vereine, freie Plätze, Studios und Hallen. Sie funktioniert in ganz Deutschland.
 
+**Live:** https://tannertos.github.io/sportfinder/
+
 ## Woher die Daten kommen (alles kostenlos)
 
-| Quelle | Was | Wie |
+| Quelle | Was | Aktualisierung |
 |---|---|---|
-| OpenStreetMap | Plätze, Hallen, Bäder, teils Vereine | live bei jeder Suche |
-| Overture Maps Places | Studios, Vereine, Hallen (viel aus Facebook-Seiten) | monatlich als Kacheln |
+| OpenStreetMap (Geofabrik-Deutschlandpaket) | Plätze, Hallen, Bäder, teils Vereine | monatlich |
+| Overture Maps Places | Studios, Vereine, Hallen (viel aus Facebook-Seiten) | monatlich |
 | Foursquare OS Places | Studios und Sportstätten | monatlich, optional |
 
-Zur Ortssuche nutzt die App Nominatim (OpenStreetMap). Die Routen öffnen sich in Google Maps oder Apple Karten.
+Die Daten liegen als Kacheln (je 0,5° × 0,5°) neben der App. Die App lädt nur die Kacheln rund um den gesuchten Ort. Für die Ortssuche nutzt sie Nominatim (OpenStreetMap). Routen öffnen sich in Google Maps oder Apple Karten.
 
-## Einmalig einrichten (ca. 15 Minuten)
+## Wie es läuft
 
-1. Lege ein kostenloses Konto auf github.com an und erstelle ein neues Repository, z. B. `sportfinder`.
-2. Lade den Inhalt dieses Ordners hoch: auf github.com über **Add file → Upload files**, einfach alles hineinziehen, auch den Ordner `.github`.
-3. Gehe zu **Settings → Pages** und stelle bei **Source** „GitHub Actions“ ein.
-4. Optional für Foursquare: Lege ein kostenloses Konto auf huggingface.co an, öffne die Seite `foursquare/fsq-os-places` und akzeptiere dort die Bedingungen. Erstelle dann unter **Settings → Access Tokens** einen Token mit Leserechten. In GitHub trägst du ihn unter **Settings → Secrets and variables → Actions → New repository secret** ein, mit dem Namen `HF_TOKEN`.
-5. Unter **Actions → „Daten-Update & Veröffentlichung“ → Run workflow** startest du den ersten Lauf. Er dauert etwa 15–40 Minuten.
-6. Danach ist die App erreichbar unter `https://DEIN-NAME.github.io/sportfinder/`.
+- Ein GitHub-Workflow (`.github/workflows/daten-update.yml`) läuft jeden Monat am 2., um 03:17 UTC. Er läuft außerdem, sobald sich etwas in `site/` ändert. Von Hand startest du ihn unter **Actions → „Daten-Update & Veröffentlichung“ → Run workflow**.
+- Ein Lauf dauert etwa 7 Minuten. Danach ist die App mit den neuen Daten online.
 
-Ab dann aktualisieren sich die Daten jeden Monat automatisch.
+## Optional: Foursquare zusätzlich nutzen
+
+1. Lege ein kostenloses Konto auf huggingface.co an, öffne `foursquare/fsq-os-places` und akzeptiere die Bedingungen.
+2. Erstelle unter **Settings → Access Tokens** einen Token mit Leserechten.
+3. Trage ihn in GitHub ein: **Settings → Secrets and variables → Actions → New repository secret**, Name `HF_TOKEN`.
 
 ## Ordner
 
 - `site/index.html`: die App
-- `site/data/`: die erzeugten Kacheln (entstehen beim ersten Lauf)
-- `pipeline/build_places.py`: der Datenimport
-- `.github/workflows/daten-update.yml`: der monatliche Ablauf
+- `site/data/`: Overture-/Foursquare-Kacheln, dazu `kategorien.json` (Auswertung zum Nachschärfen der Zuordnung)
+- `site/data/osm/`: OpenStreetMap-Kacheln
+- `pipeline/build_places.py`: Import Overture/Foursquare
+- `pipeline/build_osm.py`: Import OpenStreetMap
 
 ## Lizenzhinweise
 
-- Kartendaten: © OpenStreetMap-Mitwirkende (ODbL). Sie werden live abgefragt und nicht mit den Kacheln vermischt gespeichert.
+- OpenStreetMap-Daten: © OpenStreetMap-Mitwirkende, ODbL (eigene Kacheln, getrennt gespeichert)
 - Orte: © Overture Maps Foundation (CDLA Permissive 2.0), Foursquare OS Places (Apache 2.0)
-- Nominatim und die öffentlichen Overpass-Server sind für kleine Nutzerzahlen gedacht. Wenn die App wächst, sollten wir eigene Server oder Bezahldienste einplanen, ab etwa 20 €/Monat.
+- Nominatim ist für kleine Nutzerzahlen gedacht. Wenn die App wächst, sollten wir einen eigenen oder bezahlten Geocoder einplanen.
