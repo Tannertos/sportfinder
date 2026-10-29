@@ -41,7 +41,7 @@ CAT_RULES = [
     ("kampfsport",  r"martial|karate|judo|taekwondo|aikido|jiu|ju_?jutsu|kickbox|boxing|mma|kung|krav|self.?defen|wing.?chun|capoeira|muay"),
     ("fechten",     r"fencing"),
     ("crossfit",    r"crossfit|functional.?training|bootcamp"),
-    ("fitness",     r"\bgym\b|gyms\b|fitness|health.?club|weight.?lift|bodybuild|personal.?train"),
+    ("fitness",     r"(^|[^a-z])gyms?([^a-z]|$)|fitness.?(cent|studio|club)|health.?club|weight.?lift|bodybuild"),
     ("calisthenics",r"calisthenic|outdoor.?gym|fitness.?trail"),
     ("trampolin",   r"trampoline"),
     ("schwimmen",   r"swim|aquatic|public.?bath|water.?park|lido|thermal.?bath"),
