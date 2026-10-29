@@ -323,7 +323,8 @@ function toItem(el){
   const base=t.leisure==="pitch"?(S.pitch?`${sp}platz`:`Platz · ${sp}`):`${kindLabel} · ${sp}`;
   // Namenlose Orte: Umfeld (Schulhof, Spielplatz …), Verein in der Nähe oder Straße dazuschreiben
   const c=t._ctx,st=t._street,ck=t._ctxkind;
-  const where=ck==="schule"?"Schulhof"+(c?" "+c:""):ck==="spielplatz"?"Spielplatz"+(c?" "+c:st?" "+st:""):
+  const pre=(w,x)=>new RegExp(w,"i").test(x)?x:w+" "+x; // "Spielplatz Spielplatz …" vermeiden
+  const where=ck==="schule"?(c?pre("Schulhof",c):"Schulhof"):ck==="spielplatz"?(c?pre("Spielplatz",c):"Spielplatz"+(st?" "+st:"")):
     ck==="park"?(c||"Park"+(st?" "+st:"")):ck==="anlage"?(c||"Sportanlage"+(st?" "+st:"")):"";
   const suffix=t._club||where||st||"";
   const name=t.name||t.operator||(suffix?`${base} – ${suffix}`:base);
