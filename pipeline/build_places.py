@@ -56,7 +56,7 @@ CAT_RULES = [
     ("bowling",     r"bowling|kegel|skittle"),
     ("billard",     r"billiard|pool.?hall|snooker"),
     ("darts",       r"\bdarts?\b"),
-    ("reiten",      r"horse|equestrian|riding.?school|stable"),
+    ("reiten",      r"horse|equestrian|riding.?school"),
     ("eislaufen",   r"ice.?skat|ice.?rink|ice.?hockey|skating.?rink"),
     ("skaten",      r"skate.?park|skateboard|roller|inline"),
     ("fussball",    r"soccer|futsal|football"),
@@ -212,10 +212,26 @@ def cat_expr(con, src):
     return " || ' ' || ".join(f"COALESCE({p},'')" for p in parts), cols
 
 
+def main_cat_expr(cols):
+    """Nur die genaueste Kategorie (ohne Oberkategorien wie 'fitness_and_instruction'),
+    damit z. B. ein Tennisverein nicht zusätzlich als Fitnessstudio gilt."""
+    parts = []
+    if "basic_category" in cols:
+        parts.append("CAST(basic_category AS VARCHAR)")
+    if "taxonomy" in cols and "primary" in str(cols["taxonomy"]).lower():
+        parts.append("CAST(taxonomy.primary AS VARCHAR)")
+    if "categories" in cols and "primary" in str(cols["categories"]).lower():
+        parts.append("CAST(categories.primary AS VARCHAR)")
+    if not parts:
+        return None
+    return " || ' ' || ".join(f"COALESCE({p},'')" for p in parts)
+
+
 def read_overture(path, min_conf):
     con = duckdb.connect()
     src = f"read_parquet('{path}')"
     cexpr, cols = cat_expr(con, src)
+    mexpr = main_cat_expr(cols) or cexpr
     # Grober Vorfilter in DuckDB (schnell). Bewusst mit Wortteilen, die nicht in
     # Allerweltswörtern stecken ("ice" wäre auch in "office"/"service").
     broad = "|".join(["yoga", "pilates", "danc", "ballet", "boxing", "kickbox", "martial", "karate", "judo",
@@ -233,7 +249,7 @@ def read_overture(path, min_conf):
     lonlat = "bbox.xmin AS lon, bbox.ymin AS lat, NULL AS geom" if has_bbox else "NULL AS lon, NULL AS lat, geometry AS geom"
     addr = "addresses" if "addresses" in cols else "NULL"
     q = f"""
-      SELECT id, names.primary AS name, {cexpr} AS cat, {lonlat},
+      SELECT id, names.primary AS name, {mexpr} AS cat, {lonlat},
              websites, phones, {addr} AS addresses, socials
       FROM {src}
       WHERE regexp_matches(lower({cexpr}), '{broad}') {conf}
