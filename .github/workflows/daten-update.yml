@@ -36,11 +36,14 @@ jobs:
       - name: OpenStreetMap-Sportorte für Deutschland
         run: |
           curl -sSL -o germany.osm.pbf https://download.geofabrik.de/europe/germany-latest.osm.pbf
-          osmium tags-filter germany.osm.pbf nwr/sport nwr/leisure nwr/club nwr/amenity=dancing_school -o sport.osm.pbf --overwrite
+          osmium tags-filter germany.osm.pbf nwr/sport nwr/leisure nwr/club nwr/amenity=dancing_school,school,college,university -o sport.osm.pbf --overwrite
+          osmium tags-filter germany.osm.pbf w/highway=residential,living_street,unclassified,tertiary,secondary,primary,pedestrian,footway,path,cycleway,track,service -o hw.osm.pbf --overwrite
           rm germany.osm.pbf
+          osmium tags-filter hw.osm.pbf w/name -o streets.osm.pbf --overwrite
           osmium export sport.osm.pbf -f geojsonseq --add-unique-id=type_id -o sport.geojsonseq --overwrite
-          python pipeline/build_osm.py sport.geojsonseq --out site/data/osm
-          rm sport.osm.pbf sport.geojsonseq
+          osmium export streets.osm.pbf -f geojsonseq --geometry-types=linestring -o streets.geojsonseq --overwrite
+          python pipeline/build_osm.py sport.geojsonseq --streets streets.geojsonseq --out site/data/osm
+          rm -f sport.osm.pbf hw.osm.pbf streets.osm.pbf sport.geojsonseq streets.geojsonseq
 
       - name: Orte für Deutschland erzeugen
         env:
