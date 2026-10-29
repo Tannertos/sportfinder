@@ -143,6 +143,11 @@ def sports_for(cat_text, name):
     # Kampfsportschulen: Disziplin aus dem Namen ("Judo Club Essen" -> auch judo)
     if "kampfsport" in found:
         found += [k for k, rx in NAME_RULES if k in ("judo", "karate", "taekwondo", "boxen") and rx.search(name or "")]
+    # Falsch als "gym" einsortiert, Name verrät aber eine andere Sportart ("Schachclub ...")
+    if found == ["fitness"]:
+        by_name = [k for k, rx in NAME_RULES if k != "fitness" and k in APP_SPORTS and rx.search(name or "")]
+        if by_name and not re.search(r"fitness|gym|kraft", name or "", re.I):
+            found = by_name
     # "Climbing Gym" o. Ä. ist kein Fitnessstudio
     if "fitness" in found and len(found) > 1 and not re.search(r"fitness|health.?club|weight|bodybuild", cat_text, re.I):
         found.remove("fitness")
