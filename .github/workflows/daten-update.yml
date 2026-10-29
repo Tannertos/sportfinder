@@ -1,0 +1,52 @@
+name: Daten-Update & Veröffentlichung
+
+on:
+  schedule:
+    - cron: "17 3 2 * *"   # jeden Monat am 2. um 03:17 UTC
+  workflow_dispatch: {}     # zusätzlich per Knopfdruck ("Run workflow")
+  push:
+    branches: [main]
+    paths: ["site/**"]      # App-Änderungen sofort veröffentlichen
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Werkzeuge installieren
+        run: pip install duckdb overturemaps huggingface_hub
+
+      - name: Orte für Deutschland erzeugen
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}   # optional, für Foursquare
+        run: python pipeline/build_places.py --out site/data
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
