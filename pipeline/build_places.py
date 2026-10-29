@@ -213,18 +213,19 @@ def cat_expr(con, src):
 
 
 def main_cat_expr(cols):
-    """Nur die genaueste Kategorie (ohne Oberkategorien wie 'fitness_and_instruction'),
-    damit z. B. ein Tennisverein nicht zusätzlich als Fitnessstudio gilt."""
-    parts = []
-    if "basic_category" in cols:
-        parts.append("CAST(basic_category AS VARCHAR)")
+    """Nur die genaueste Kategorie (z. B. 'yoga_studio'). Grobe Kategorien wie
+    basic_category ('fitness_center' o. Ä.) nur, wenn es keine genauere gibt –
+    sonst würden Yoga-Studios und Tanzschulen zusätzlich als Fitnessstudio gelten."""
+    order = []
     if "taxonomy" in cols and "primary" in str(cols["taxonomy"]).lower():
-        parts.append("CAST(taxonomy.primary AS VARCHAR)")
+        order.append("NULLIF(CAST(taxonomy.primary AS VARCHAR),'')")
     if "categories" in cols and "primary" in str(cols["categories"]).lower():
-        parts.append("CAST(categories.primary AS VARCHAR)")
-    if not parts:
+        order.append("NULLIF(CAST(categories.primary AS VARCHAR),'')")
+    if "basic_category" in cols:
+        order.append("NULLIF(CAST(basic_category AS VARCHAR),'')")
+    if not order:
         return None
-    return " || ' ' || ".join(f"COALESCE({p},'')" for p in parts)
+    return "COALESCE(" + ", ".join(order) + ", '')"
 
 
 def read_overture(path, min_conf):
