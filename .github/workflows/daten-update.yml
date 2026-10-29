@@ -29,7 +29,18 @@ jobs:
           python-version: "3.12"
 
       - name: Werkzeuge installieren
-        run: pip install duckdb overturemaps huggingface_hub
+        run: |
+          pip install duckdb overturemaps huggingface_hub
+          sudo apt-get update -qq && sudo apt-get install -y -qq osmium-tool
+
+      - name: OpenStreetMap-Sportorte für Deutschland
+        run: |
+          curl -sSL -o germany.osm.pbf https://download.geofabrik.de/europe/germany-latest.osm.pbf
+          osmium tags-filter germany.osm.pbf nwr/sport nwr/leisure nwr/club nwr/amenity=dancing_school -o sport.osm.pbf --overwrite
+          rm germany.osm.pbf
+          osmium export sport.osm.pbf -f geojsonseq --add-unique-id=type_id -o sport.geojsonseq --overwrite
+          python pipeline/build_osm.py sport.geojsonseq --out site/data/osm
+          rm sport.osm.pbf sport.geojsonseq
 
       - name: Orte für Deutschland erzeugen
         env:
