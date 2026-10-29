@@ -216,14 +216,18 @@ def read_overture(path, min_conf):
     con = duckdb.connect()
     src = f"read_parquet('{path}')"
     cexpr, cols = cat_expr(con, src)
-    broad = "|".join(["yoga", "pilates", "danc", "ballet", "box", "martial", "karate", "judo", "taekwondo", "aikido",
-                      "jiu", "fenc", "gym", "fitness", "crossfit", "bootcamp", "trampolin", "swim", "aquatic", "bath",
-                      "climb", "boulder", "tennis", "badminton", "squash", "padel", "golf", "bowling", "billiard",
-                      "snooker", "dart", "horse", "equestrian", "riding", "ice", "skat", "roller", "soccer", "football",
-                      "basketball", "volleyball", "handball", "hockey", "rugby", "baseball", "softball", "cricket",
-                      "running", "athletic", "cycling", "bike", "bmx", "rowing", "canoe", "kayak", "paddle", "sail",
-                      "diving", "scuba", "archery", "shooting", "boule", "bocce", "petanque", "chess", "disc", "sport",
-                      "stadium", "arena", "recreation", "calisthenic"])
+    # Grober Vorfilter in DuckDB (schnell). Bewusst mit Wortteilen, die nicht in
+    # Allerweltswörtern stecken ("ice" wäre auch in "office"/"service").
+    broad = "|".join(["yoga", "pilates", "danc", "ballet", "boxing", "kickbox", "martial", "karate", "judo",
+                      "taekwondo", "aikido", "jiu", "fencing", "gym", "fitness", "crossfit", "bootcamp", "trampolin",
+                      "swim", "aquatic", "public_bath", "water_park", "climb", "boulder", "tennis", "badminton", "squash",
+                      "padel", "golf", "bowling", "billiard", "snooker", "darts", "equestrian", "horse_riding",
+                      "riding_school", "ice_rink", "ice_skat", "hockey", "skate", "roller", "soccer", "football",
+                      "basketball", "volleyball", "handball", "rugby", "baseball", "softball", "cricket", "running",
+                      "athletic", "cycling", "bike_park", "bmx", "pump_track", "rowing", "canoe", "kayak", "paddle",
+                      "sailing", "diving", "scuba", "archery", "shooting_range", "gun_club", "boule", "bocce",
+                      "petanque", "chess", "disc_golf", "sports_club", "sport_club", "sports_center", "sports_centre",
+                      "sports_complex", "sports_field", "sports_and_recreation", "stadium", "arena", "recreation_center", "calisthenic"])
     conf = f"AND COALESCE(confidence,1) >= {min_conf}" if "confidence" in cols else ""
     has_bbox = "bbox" in cols
     lonlat = "bbox.xmin AS lon, bbox.ymin AS lat, NULL AS geom" if has_bbox else "NULL AS lon, NULL AS lat, geometry AS geom"
@@ -265,13 +269,13 @@ def read_foursquare(local_glob=None):
     else:
         token = os.environ.get("HF_TOKEN")
         if not token:
-            print("Foursquare: übersprungen (kein HF_TOKEN gesetzt)")
+            print("Foursquare: übersprungen (kein HF_TOKEN gesetzt)", flush=True)
             return []
         from huggingface_hub import list_repo_files
         files = list_repo_files("foursquare/fsq-os-places", repo_type="dataset", token=token)
         dts = sorted({m.group(1) for f in files if (m := re.search(r"release/dt=([\d-]+)/places/", f))})
         if not dts:
-            print("Foursquare: keine Release gefunden – übersprungen")
+            print("Foursquare: keine Release gefunden – übersprungen", flush=True)
             return []
         dt = dts[-1]
         print(f"Foursquare: Release {dt}", flush=True)
