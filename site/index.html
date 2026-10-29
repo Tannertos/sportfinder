@@ -383,8 +383,29 @@ function mergePlaces(osm,open){
   }
   return out;
 }
+/* OpenStreetMap: monatlich erzeugte Kacheln (schnell, unabhängig von Overpass-Servern) */
+const OSMT={index:undefined,tiles:new Map()};
+async function osmTiles(sportKey,lat,lon,radiusKm){
+  if(OSMT.index===undefined){try{const r=await fetch(DATA_BASE+"osm/index.json");OSMT.index=r.ok?await r.json():null}catch(e){OSMT.index=null}}
+  const idx=OSMT.index; if(!idx)return null;
+  const T=idx.tile||0.5,dLat=radiusKm/111.32,dLon=radiusKm/(111.32*Math.cos(lat*Math.PI/180));
+  const keys=[];
+  for(let a=Math.floor((lat-dLat)/T);a<=Math.floor((lat+dLat)/T);a++)
+    for(let b=Math.floor((lon-dLon)/T);b<=Math.floor((lon+dLon)/T);b++){const k=a+"_"+b;if(idx.tiles[k])keys.push(k)}
+  const rows=(await Promise.all(keys.map(k=>{
+    if(!OSMT.tiles.has(k))OSMT.tiles.set(k,fetch(DATA_BASE+"osm/tiles/"+k+".json").then(r=>r.ok?r.json():[]).catch(()=>[]));
+    return OSMT.tiles.get(k);
+  }))).flat();
+  const TY={n:"node",w:"way",r:"relation"};
+  return rows.filter(r=>r[2].includes(sportKey)&&km(lat,lon,r[0],r[1])<=radiusKm)
+    .map(r=>({type:TY[r[3][0]]||"node",id:r[3].slice(1),lat:r[0],lon:r[1],tags:r[4]}));
+}
+async function osmSource(sportKey,lat,lon,radiusKm){
+  const t=await osmTiles(sportKey,lat,lon,radiusKm);
+  return t!==null?t:overpass(sportKey,lat,lon,radiusKm); // Ausweichlösung: Live-Server
+}
 async function fetchAll(lat,lon,radiusKm){
-  const [a,b]=await Promise.allSettled([overpass(state.sport,lat,lon,radiusKm),openPlaces(state.sport,lat,lon,radiusKm)]);
+  const [a,b]=await Promise.allSettled([osmSource(state.sport,lat,lon,radiusKm),openPlaces(state.sport,lat,lon,radiusKm)]);
   if(a.status!=="fulfilled"&&!(b.status==="fulfilled"&&b.value))throw new Error("offline");
   const osm=a.status==="fulfilled"?a.value.map(toItem).filter(Boolean):[];
   const seen=new Set();
