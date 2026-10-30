@@ -129,6 +129,30 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
 .fav:hover{background:var(--bg)}
 .fav:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .card.isfav{border-left:3px solid #e0245e}
+/* Mitspielen */
+.social{grid-column:1/-1;margin-top:10px;padding-top:12px;border-top:1px dashed var(--line);display:grid;gap:14px;cursor:default}
+.social h4{margin:0;font-family:var(--display);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.soc-note{margin:0;font-size:12.5px;color:var(--accent);background:var(--accent-soft);padding:6px 10px;border-radius:8px}
+.soc-block{display:grid;gap:7px;font-size:14px}
+.soc-block>b{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.soc-block ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.soc-block li{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;background:var(--bg);border-radius:8px;padding:8px 10px}
+.soc-block li small{color:var(--muted)}
+.soc-empty{margin:0;color:var(--muted);font-size:13px}
+.soc-acts{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.soc-acts a{color:var(--free);font-weight:600}
+.soc-btn{justify-self:start;font:inherit;font-size:14px;font-weight:600;padding:8px 14px;border-radius:99px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;min-height:38px}
+.soc-btn.small{padding:5px 12px;min-height:34px;font-size:13px}
+.soc-btn.on{background:var(--free);border-color:var(--free);color:#fff}
+.soc-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.soc-form input,.soc-form select{font:inherit;font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
+.soc-form input[name=link],.soc-form input[name=note],.soc-form input[name=nick],.soc-form.inline input{flex:1 1 200px}
+.soc-form label{display:flex;gap:6px;align-items:center;font-size:14px}
+.soc-form button{font:inherit;font-size:14px;font-weight:600;padding:9px 16px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;min-height:40px}
+.soc-form button.ghost{background:transparent;color:var(--muted)}
+.soc-btn:focus-visible,.soc-form button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.soc-err{color:#d0453a;font-size:13px;margin:0}
+.tag.soc{background:color-mix(in srgb,var(--free) 18%,transparent);color:var(--free)}
 .ask input::-webkit-calendar-picker-indicator{display:none!important}
 @media (max-width:860px){
   .band::after{width:200px;height:200px;right:-80px;top:-80px}
@@ -214,6 +238,7 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
       <button type="button" data-f="covered" aria-pressed="false">überdacht / Halle</button>
       <button type="button" data-f="noschool" aria-pressed="false">ohne Schulgelände</button>
       <button type="button" data-f="fav" aria-pressed="false">♥ Favoriten</button>
+      <button type="button" data-f="social" aria-pressed="false">👥 Mitspieler</button>
     </div>
   </div>
   <div class="main">
@@ -572,7 +597,7 @@ function goDemo(){
 function results(){
   if(!state.center)return [];
   const [la,lo]=state.center;
-  const F=state.flags,ok=d=>{const f=d.flags||{};return (!F.has("free")||f.free)&&(!F.has("lit")||f.lit)&&(!F.has("covered")||f.covered)&&(!F.has("noschool")||!f.school)&&(!F.has("fav")||FAV.has(d.id))};
+  const F=state.flags,ok=d=>{const f=d.flags||{};return (!F.has("free")||f.free)&&(!F.has("lit")||f.lit)&&(!F.has("covered")||f.covered)&&(!F.has("noschool")||!f.school)&&(!F.has("fav")||FAV.has(d.id))&&(!F.has("social")||SOC.active(d.id))};
   return state.items.filter(d=>state.types.has(d.type)&&ok(d)).map(d=>({...d,dist:km(la,lo,d.lat,d.lon)})).filter(d=>d.dist<=state.radius)
     .sort((a,b)=>(FAV.has(b.id)-FAV.has(a.id))||((a.dist-b.dist)-(b.named-a.named)*0.4));
 }
@@ -596,9 +621,9 @@ function render(){
       <h3>${esc(r.name)}</h3>
       <span class="km">${fmt(r.dist)}<small>${walk<45?walk+" Min. zu Fuß":Math.round(r.dist/15*60)+" Min. Rad"}</small><button type="button" class="fav" aria-pressed="${fav}" aria-label="${fav?"Aus Favoriten entfernen":"Zu Favoriten"}" title="${fav?"Aus Favoriten entfernen":"Merken"}">${HEART}</button></span>
       <span class="meta">${t.one}${r.info.Adresse?" · "+esc(r.info.Adresse):r.addr?" · "+esc(r.addr):""}</span>
-      <span class="tags">${r.type==="platz"?'<span class="tag hot">Einfach hingehen</span>':""}${r.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</span>
+      <span class="tags">${socTags(r)}${r.type==="platz"?'<span class="tag hot">Einfach hingehen</span>':""}${r.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</span>
       ${open?`<span class="detail">${Object.keys(r.info).length?`<dl>${Object.entries(r.info).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}${r.src?`<dt>Quelle</dt><dd>${esc(r.src)}</dd>`:""}</dl>`:`<span>Keine weiteren Angaben${r.src?" · Quelle: "+esc(r.src):""}.</span>`}
-        <span style="display:flex;flex-wrap:wrap;gap:14px">${routes}${r.web?`<a href="${esc(r.web)}" target="_blank" rel="noopener">Website →</a>`:""}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name+" "+(r.info.Adresse||r.lat.toFixed(5)+","+r.lon.toFixed(5)))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen (Google) →</a></span></span>`:""}
+        <span style="display:flex;flex-wrap:wrap;gap:14px">${routes}${r.web?`<a href="${esc(r.web)}" target="_blank" rel="noopener">Website →</a>`:""}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name+" "+(r.info.Adresse||r.lat.toFixed(5)+","+r.lon.toFixed(5)))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen (Google) →</a></span></span>${socialHtml(r)}`:""}
     </div>`}).join("")+(res.length>shown.length?`<div class="empty">Die nächsten ${shown.length} von ${res.length} werden angezeigt. Verkleinere den Umkreis für eine kürzere Liste.</div>`:"")
     :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":(state.flags.has("fav")&&!res.length?`Hier hast du noch nichts gemerkt. Tipp bei einem Ort auf das Herz – dann steht er immer oben.`:state.flags.size?`Mit den gewählten Filtern gibt es im Umkreis von ${state.radius} km nichts. Nimm einen Filter heraus oder zieh den Umkreis größer.`:`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`)}</div>`;
   if(state.mode==="live"&&leaf.map)drawLeaflet(res); else drawSvg(res);
@@ -620,7 +645,7 @@ function drawLeaflet(res){
   const acc=cssVar("--accent");
   L.circle(state.center,{radius:state.radius*1000,color:acc,weight:1.5,fillOpacity:.06}).addTo(leaf.layer);
   res.forEach(r=>{const on=state.open===r.id;
-    L.circleMarker([r.lat,r.lon],{radius:on?(TOUCH?12:10):(TOUCH?8:6),color:"#fff",weight:on?3:1.5,fillColor:cssVar(TYPES[r.type].color),fillOpacity:1})
+    L.circleMarker([r.lat,r.lon],{radius:on?(TOUCH?12:10):(TOUCH?8:6),color:SOC.active(r.id)?cssVar("--accent"):"#fff",weight:on||SOC.active(r.id)?3:1.5,fillColor:cssVar(TYPES[r.type].color),fillOpacity:1})
      .on("click",()=>toggle(r.id,true)).bindTooltip(r.name).addTo(leaf.layer)});
   L.circleMarker(state.center,{radius:8,color:"#fff",weight:3,fillColor:acc,fillOpacity:1}).addTo(leaf.layer);
   if(!state.open)leaf.map.fitBounds(L.latLng(state.center).toBounds(state.radius*2000),{padding:[10,10]});
@@ -648,10 +673,101 @@ function toggle(id,fromMap){
   if(state.open===id&&leaf.map&&!fromMap){const r=state.items.find(x=>x.id===id);if(r)leaf.map.panTo([r.lat,r.lon])}
 }
 
+/* ---------- Mitspielen: „Ich bin heute da“, feste Runden, Tipps zum Platz ----------
+   Ohne Datenbank-Zugang (SB leer) läuft alles im Testmodus nur auf diesem Gerät.
+   Mit Supabase-Projekt (Tabellen: pipeline/supabase.sql) sehen alle dieselben Einträge. */
+const SB={url:"",key:""};
+const WD=["Mo","Di","Mi","Do","Fr","Sa","So"],LV={easy:"Anfänger willkommen",mid:"locker",pro:"ambitioniert"};
+const SOC={data:{checkins:[],rounds:[],joins:[],tips:[]},key:"",form:null,live:!!(SB.url&&SB.key),
+  dev:(()=>{let d=store.get("sf_dev");if(!d){d=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);store.set("sf_dev",d)}return d})(),
+  nick:()=>store.get("sf_nick")||""};
+const pad2=n=>String(n).padStart(2,"0");
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())}
+const safeWa=u=>/^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+\/?$/.test((u||"").trim());
+async function sb(path,opt={}){
+  const r=await fetch(SB.url.replace(/\/$/,"")+"/rest/v1/"+path,{...opt,headers:{apikey:SB.key,Authorization:"Bearer "+SB.key,"Content-Type":"application/json",Prefer:"return=representation"}});
+  if(!r.ok)throw new Error("HTTP "+r.status);const t=await r.text();return t?JSON.parse(t):null}
+const LOCAL={get(t){try{return JSON.parse(store.get("sf_soc_"+t)||"[]")||[]}catch(e){return []}},put(t,a){store.set("sf_soc_"+t,JSON.stringify(a))}};
+const API=SOC.live?{
+  async list(b){const q=`lat=gte.${b[0]}&lat=lte.${b[1]}&lon=gte.${b[2]}&lon=lte.${b[3]}`;
+    const [c,r,t]=await Promise.all([sb(`checkins?select=*&day=eq.${todayStr()}&${q}`),sb(`rounds?select=*&${q}`),sb(`tips?select=*&${q}&order=created_at.desc&limit=300`)]);
+    const j=r.length?await sb(`joins?select=*&round_id=in.(${r.map(x=>x.id).join(",")})`):[];
+    return {checkins:c,rounds:r,joins:j,tips:t}},
+  add:(t,row)=>sb(t,{method:"POST",body:JSON.stringify(row)}),
+  leave:rid=>sb(`joins?round_id=eq.${rid}&device=eq.${SOC.dev}`,{method:"DELETE"})
+}:{
+  async list(b){const inB=x=>x.lat>=b[0]&&x.lat<=b[1]&&x.lon>=b[2]&&x.lon<=b[3];
+    return {checkins:LOCAL.get("checkins").filter(x=>x.day===todayStr()&&inB(x)),rounds:LOCAL.get("rounds").filter(inB),
+      joins:LOCAL.get("joins"),tips:LOCAL.get("tips").filter(inB).reverse()}},
+  async add(t,row){const a=LOCAL.get(t);row.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);row.created_at=new Date().toISOString();a.push(row);LOCAL.put(t,a);return [row]},
+  async leave(rid){LOCAL.put("joins",LOCAL.get("joins").filter(x=>!(x.round_id===rid&&x.device===SOC.dev)))}
+};
+function socBbox(){const [la,lo]=state.center,r=17,dLa=r/111.32,dLo=r/(111.32*Math.cos(la*Math.PI/180));return [la-dLa,la+dLa,lo-dLo,lo+dLo].map(x=>+x.toFixed(4))}
+function socEnsure(force){
+  if(!state.center)return;const b=socBbox(),k=b.join()+todayStr();if(k===SOC.key&&!force)return;SOC.key=k;
+  API.list(b).then(d=>{if(k!==SOC.key)return;SOC.data=d;const a=document.activeElement;
+    if(force||!(a&&a.closest&&a.closest(".soc-form")))render()}).catch(()=>{});
+}
+const nextRounds=rs=>{const t=(new Date().getDay()+6)%7;return [...rs].sort((a,b)=>((a.weekday-t+7)%7-(b.weekday-t+7)%7)||String(a.time).localeCompare(b.time))};
+function socFor(id){const d=SOC.data,h=new Date().getHours();
+  return {c:d.checkins.filter(x=>x.place_id===id&&+x.to_h>h),r:d.rounds.filter(x=>x.place_id===id),t:d.tips.filter(x=>x.place_id===id)}}
+SOC.active=id=>{const s=socFor(id);return s.c.length+s.r.length>0};
+function socTags(r){const s=socFor(r.id);let h="";
+  if(s.c.length)h+=`<span class="tag soc">👥 ${s.c.length} heute da</span>`;
+  if(s.r.length){const x=nextRounds(s.r)[0];h+=`<span class="tag soc">Runde ${WD[x.weekday]} ${esc(x.time)}</span>`}
+  return h}
+function socialHtml(r){
+  const s=socFor(r.id),f=SOC.form&&SOC.form.id===r.id?SOC.form.kind:null,now=new Date().getHours();
+  const hours=(a,b,sel)=>{let o="";for(let i=a;i<=b;i++)o+=`<option value="${i}"${i===sel?" selected":""}>${pad2(i)}:00</option>`;return o};
+  const lvSel=`<select name="level" aria-label="Niveau">${Object.entries(LV).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>`;
+  const nickIn=`<input name="nick" maxlength="20" placeholder="Dein Vorname" aria-label="Dein Vorname" value="${esc(SOC.nick())}" required>`;
+  let h=`<div class="social" data-id="${esc(r.id)}"><h4>Mitspielen</h4>`;
+  if(!SOC.live)h+=`<p class="soc-note">Testmodus: Einträge sieht vorerst nur dieses Gerät.</p>`;
+  h+=`<div class="soc-block"><b>Heute hier</b>`+(s.c.length?`<ul>${s.c.map(x=>`<li><span><strong>${esc(x.nick)}</strong> · ${pad2(x.from_h)}–${pad2(x.to_h)} Uhr</span><small>${LV[x.level]||""}</small></li>`).join("")}</ul>`:`<p class="soc-empty">Noch niemand eingetragen. Sei die oder der Erste.</p>`);
+  h+=f==="checkin"?`<form class="soc-form" data-kind="checkin"><label>Von <select name="from">${hours(6,23,Math.min(23,Math.max(6,now+1)))}</select></label><label>bis <select name="to">${hours(7,24,Math.min(24,Math.max(8,now+3)))}</select></label>${lvSel}${nickIn}<button>Eintragen</button><button type="button" class="ghost" data-act="cancel">Abbrechen</button></form>`
+    :`<button type="button" class="soc-btn" data-act="checkin">Ich bin heute da</button>`;
+  h+=`</div><div class="soc-block"><b>Feste Runden</b>`+(s.r.length?`<ul>${nextRounds(s.r).map(x=>{const j=SOC.data.joins.filter(y=>y.round_id===x.id),me=j.some(y=>y.device===SOC.dev);
+      return `<li><span><strong>${WD[x.weekday]} ${esc(x.time)} Uhr</strong> · ${LV[x.level]||""} · ${j.length}${x.spots?"/"+x.spots:""} dabei${x.note?`<br><small>${esc(x.note)} – ${esc(x.nick)}</small>`:`<br><small>von ${esc(x.nick)}</small>`}</span>
+        <span class="soc-acts"><button type="button" class="soc-btn small${me?" on":""}" data-act="join" data-round="${esc(x.id)}" aria-pressed="${me}">${me?"Dabei ✓":"Ich bin dabei"}</button>${safeWa(x.link)?`<a href="${esc(x.link.trim())}" target="_blank" rel="noopener">WhatsApp-Gruppe →</a>`:""}</span></li>`}).join("")}</ul>`:`<p class="soc-empty">Noch keine feste Runde. Leg eine an, z. B. jeden Dienstag 19 Uhr.</p>`);
+  h+=f==="round"?`<form class="soc-form" data-kind="round"><select name="weekday" aria-label="Wochentag">${WD.map((d,i)=>`<option value="${i}">jeden ${d}</option>`).join("")}</select><input name="time" type="time" value="19:00" aria-label="Uhrzeit" required>${lvSel}<input name="spots" type="number" min="2" max="40" inputmode="numeric" placeholder="Plätze" aria-label="Plätze (optional)" style="width:90px"><input name="link" type="url" placeholder="WhatsApp-Gruppenlink (optional)" aria-label="WhatsApp-Gruppenlink"><input name="note" maxlength="80" placeholder="Hinweis, z. B. Ball mitbringen" aria-label="Hinweis">${nickIn}<button>Runde anlegen</button><button type="button" class="ghost" data-act="cancel">Abbrechen</button></form>`
+    :`<button type="button" class="soc-btn" data-act="round">Runde anlegen</button>`;
+  h+=`</div><div class="soc-block"><b>Tipps zum Platz</b>`+(s.t.length?`<ul>${s.t.slice(0,5).map(x=>`<li><span>„${esc(x.text)}“</span><small>${esc(x.nick)}</small></li>`).join("")}</ul>`:"")+
+    `<form class="soc-form inline" data-kind="tip"><input name="text" maxlength="140" placeholder="z. B. Körbe mit Netz, Licht bis 22 Uhr" aria-label="Tipp zum Platz" required><button>Senden</button></form></div></div>`;
+  return h}
+function socClick(e){
+  const s=e.target.closest(".social");if(!s)return false;const b=e.target.closest("[data-act]");if(!b)return true;
+  const act=b.dataset.act;
+  if(act==="checkin"||act==="round"){SOC.form={id:s.dataset.id,kind:act};render();const i=document.querySelector(`#list .social[data-id="${CSS.escape(s.dataset.id)}"] .soc-form select, #pick .soc-form select`);if(i)i.focus()}
+  else if(act==="cancel"){SOC.form=null;render()}
+  else if(act==="join")socJoin(b.dataset.round,b);
+  return true}
+async function socSubmit(e){
+  const f=e.target.closest(".soc-form");if(!f)return;e.preventDefault();
+  const id=f.closest(".social").dataset.id,r=state.items.find(x=>x.id===id);if(!r)return;
+  const v=Object.fromEntries(new FormData(f)),kind=f.dataset.kind;
+  if(v.nick){v.nick=v.nick.trim().slice(0,20);store.set("sf_nick",v.nick)}
+  const base={place_id:id,place_name:r.name.slice(0,120),lat:+r.lat.toFixed(5),lon:+r.lon.toFixed(5),sport:state.sport,device:SOC.dev,nick:v.nick||SOC.nick()||"Anonym"};
+  let t,row;
+  const fail=m=>{let e=f.querySelector(".soc-err");if(!e){e=document.createElement("p");e.className="soc-err";e.setAttribute("role","alert");f.appendChild(e)}e.textContent=m;f.querySelectorAll("button").forEach(x=>x.disabled=false)};
+  if(kind==="checkin"){const a=+v.from,b=+v.to;if(b<=a){fail("„bis“ muss nach „von“ liegen.");return}
+    t="checkins";row={...base,day:todayStr(),from_h:a,to_h:b,level:v.level}}
+  else if(kind==="round"){if(v.link&&!safeWa(v.link)){fail("Bitte einen Einladungslink von WhatsApp einfügen (chat.whatsapp.com/…).");return}
+    t="rounds";row={...base,weekday:+v.weekday,time:v.time,level:v.level,spots:v.spots?Math.min(40,Math.max(2,+v.spots)):null,link:v.link?v.link.trim():null,note:(v.note||"").trim().slice(0,80)||null}}
+  else{const tx=(v.text||"").trim().slice(0,140);if(!tx)return;t="tips";row={...base,text:tx}}
+  f.querySelectorAll("button").forEach(x=>x.disabled=true);
+  try{await API.add(t,row);SOC.form=null;socEnsure(true)}
+  catch(err){fail("Hat nicht geklappt – bitte gleich noch einmal versuchen.")}
+}
+async function socJoin(rid,btn){
+  const me=SOC.data.joins.some(y=>y.round_id===rid&&y.device===SOC.dev);btn.disabled=true;
+  try{if(me)await API.leave(rid);else await API.add("joins",{round_id:rid,device:SOC.dev,nick:SOC.nick()||"Anonym"});socEnsure(true)}
+  catch(e){btn.disabled=false}
+}
+
 /* ---------- Events ---------- */
 function favClick(e){const b=e.target.closest(".fav");if(!b)return false;const c=b.closest(".card"),r=state.items.find(x=>x.id===c.dataset.id);
   if(r){FAV.toggle(r);render()}return true}
-$("list").addEventListener("click",e=>{if(favClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id)});
+$("list").addEventListener("click",e=>{if(favClick(e)||socClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id)});
 $("list").addEventListener("keydown",e=>{const c=e.target.closest(".card");if(c&&e.target===c&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(c.dataset.id)}});
 $("map").addEventListener("click",e=>{const p=e.target.closest(".pin");if(p)toggle(p.dataset.id)});
 $("map").addEventListener("keydown",e=>{const p=e.target.closest(".pin");if(p&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(p.dataset.id)}});
@@ -709,10 +825,10 @@ $("freeForm").addEventListener("submit",e=>{
   if(q.get("s")&&SPORTS[q.get("s")])state.sport=q.get("s");
   if(q.get("o")){state.place=q.get("o");$("ort").value=state.place}
   if(q.get("r")){const r=Math.min(15,Math.max(1,+q.get("r")||5));state.radius=r;$("radius").value=r}
-  (q.get("f")||"").split(",").filter(f=>["free","lit","covered","noschool"].includes(f)).forEach(f=>{state.flags.add(f);
+  (q.get("f")||"").split(",").filter(f=>["free","lit","covered","noschool","social"].includes(f)).forEach(f=>{state.flags.add(f);
     const b=document.querySelector(`#flagSeg [data-f="${f}"]`);if(b)b.setAttribute("aria-pressed","true")});
 })();
-const _render=render;render=function(){_render();syncUrl();showPick();fitPlace()};
+const _render=render;render=function(){_render();syncUrl();showPick();fitPlace();socEnsure()};
 /* Ortsfeld so breit wie der Ortsname; zu lange Namen werden kleiner statt abgeschnitten */
 function fitPlace(){
   const i=$("ort");if(!i)return;i.style.fontSize="";
@@ -750,7 +866,8 @@ function setView(map,init){
     if(c)c.scrollIntoView({block:"center"});else $("count").scrollIntoView({block:"start"})}
 }
 $("viewToggle").addEventListener("click",()=>setView(!isMapView()));
-$("pick").addEventListener("click",e=>{if(favClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id,true)});
+$("list").addEventListener("submit",socSubmit);$("pick").addEventListener("submit",socSubmit);
+$("pick").addEventListener("click",e=>{if(favClick(e)||socClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id,true)});
 MOBILE.addEventListener("change",()=>{if(!MOBILE.matches&&isMapView())setView(false);if(leaf.map)setTimeout(()=>leaf.map.invalidateSize(),60)});
 setView(false,true);
 search();
