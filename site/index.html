@@ -1,4 +1,7 @@
+<!doctype html>
+<html lang="de">
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Sportfinder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="manifest" href="manifest.webmanifest">
@@ -31,7 +34,7 @@
   --court:#13283d; --court-ink:#e7edf2; --accent:#f07f45; --accent-soft:#3a2418;
   --club:#6fa2f0; --free:#4fc68d; --book:#c595ea; color-scheme:dark }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .band{background:var(--court);color:var(--court-ink);position:relative;overflow:hidden}
 .band::after{content:"";position:absolute;right:-90px;top:-90px;width:300px;height:300px;border:3px solid rgba(255,255,255,.12);border-radius:50%;pointer-events:none}
 .band::before{content:"";position:absolute;right:60px;top:-30px;bottom:-30px;width:3px;background:rgba(255,255,255,.08);pointer-events:none}
@@ -114,6 +117,59 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .osm{font-size:12px;opacity:.7;padding:2px 4px}
 .osm a{color:inherit}
+/* ---------- Handy zuerst ---------- */
+.viewtoggle{display:none}
+.mapbox{position:sticky}
+#pick:empty{display:none}
+.ask input::-webkit-calendar-picker-indicator{display:none!important}
+@media (max-width:860px){
+  .band::after{width:200px;height:200px;right:-80px;top:-80px}
+  .band::before{right:40px}
+  .band .wrap{padding-block:max(14px,env(safe-area-inset-top,0px)) 16px}
+  .brand{font-size:19px}
+  .ask{margin-top:12px;font-size:clamp(28px,9.5vw,42px);gap:0 10px}
+  .ask select{max-width:100%}
+  .ask .place{flex:none}
+  .free-text{margin-top:14px;max-width:none}
+  .free-text input,.free-text button{font-size:16px;padding:12px 14px;min-height:46px}
+  .hint{min-height:0}
+  .hint:not(:empty){min-height:20px}
+  .status{margin-top:12px;padding:8px 12px;font-size:13px}
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-block:12px 10px}
+  .controls>.seg,.controls>.radius{grid-column:1/-1}
+  #typeSeg,.filters{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-inline:-16px;padding-inline:16px}
+  #typeSeg::-webkit-scrollbar,.filters::-webkit-scrollbar{display:none}
+  .filters{padding-bottom:10px}
+  .filters .seg{flex-wrap:nowrap}
+  .seg button{min-height:40px;white-space:nowrap;flex:none}
+  .seg.small button{min-height:36px;font-size:13.5px}
+  .radius{font-size:14px}
+  .radius input{flex:1;width:auto;min-width:0;height:28px}
+  .locbtn{min-height:44px;width:100%}
+  .main{gap:12px;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  .count{font-size:18px}
+  .count span{display:block;margin:2px 0 0}
+  .card{padding:12px 14px;gap:3px 12px}
+  .card .kind{width:34px;height:34px;font-size:14px}
+  .card h3{font-size:15.5px}
+  .detail{font-size:14.5px}
+  .detail dl{grid-template-columns:1fr;gap:0}
+  .detail dt{font-size:12px;margin-top:6px}
+  .detail a{display:inline-block;padding:2px 0}
+  .mapbox{order:0;position:relative;top:auto;display:none;padding:8px;border-radius:12px;margin-inline:-8px}
+  body.mapview .mapbox{display:block}
+  body.mapview .main>section{display:none}
+  #leaf{height:calc(100dvh - 120px - env(safe-area-inset-bottom,0px));min-height:320px}
+  .mapbox svg{max-height:calc(100dvh - 160px)}
+  #pick{position:fixed;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:1050;max-height:52dvh;overflow:auto;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+  #pick .card{color:var(--ink)}
+  .viewtoggle{display:flex;align-items:center;gap:8px;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1100;
+    font:inherit;font-weight:700;font-size:15px;padding:13px 22px;border-radius:99px;border:0;background:var(--ink);color:var(--bg);box-shadow:0 6px 22px rgba(0,0,0,.3);cursor:pointer}
+  .viewtoggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .viewtoggle svg{width:18px;height:18px}
+  footer{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:380px){.controls{grid-template-columns:1fr}}
 </style>
 
 <div class="band">
@@ -158,6 +214,7 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
     </section>
     <aside class="mapbox" aria-label="Karte">
       <div id="leaf" hidden></div>
+      <div id="pick"></div>
       <svg id="map" viewBox="0 0 600 520" role="img" aria-label="Schematische Karte mit Ergebnissen"></svg>
       <div class="maplegend">
         <span><i class="dot" style="background:var(--club)"></i>Verein</span>
@@ -171,6 +228,7 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
   <footer id="foot">Plätze und Hallen kommen live aus OpenStreetMap, Studios und Vereine aus den offenen Datensätzen von Overture Maps und Foursquare (monatlich aktualisiert). Kurszeiten und Preise fehlen dort; die Einordnung „Verein / Platz / Studio“ wird aus den Daten abgeleitet.</footer>
 </div>
 
+<button type="button" class="viewtoggle" id="viewToggle" aria-pressed="false"></button>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 // Katalog: osm = Werte des OSM-Tags "sport"; extra = zusätzliche Kartenfilter; name = Suche im Namen (für Studios ohne sport-Tag)
@@ -533,6 +591,7 @@ function render(){
 
 /* Leaflet-Karte (nur im Live-Modus) */
 const leaf={map:null,layer:null,ring:null,me:null};
+const TOUCH=matchMedia("(pointer:coarse)").matches;
 function initLeaflet(){
   if(leaf.map||!window.L)return;
   if(!document.getElementById("leafcss")){const l=document.createElement("link");l.id="leafcss";l.rel="stylesheet";l.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";document.head.appendChild(l)}
@@ -546,7 +605,7 @@ function drawLeaflet(res){
   const acc=cssVar("--accent");
   L.circle(state.center,{radius:state.radius*1000,color:acc,weight:1.5,fillOpacity:.06}).addTo(leaf.layer);
   res.forEach(r=>{const on=state.open===r.id;
-    L.circleMarker([r.lat,r.lon],{radius:on?10:6,color:"#fff",weight:on?3:1.5,fillColor:cssVar(TYPES[r.type].color),fillOpacity:1})
+    L.circleMarker([r.lat,r.lon],{radius:on?(TOUCH?12:10):(TOUCH?8:6),color:"#fff",weight:on?3:1.5,fillColor:cssVar(TYPES[r.type].color),fillOpacity:1})
      .on("click",()=>toggle(r.id,true)).bindTooltip(r.name).addTo(leaf.layer)});
   L.circleMarker(state.center,{radius:8,color:"#fff",weight:3,fillColor:acc,fillOpacity:1}).addTo(leaf.layer);
   if(!state.open)leaf.map.fitBounds(L.latLng(state.center).toBounds(state.radius*2000),{padding:[10,10]});
@@ -636,7 +695,44 @@ $("freeForm").addEventListener("submit",e=>{
   (q.get("f")||"").split(",").filter(f=>["free","lit","covered","noschool"].includes(f)).forEach(f=>{state.flags.add(f);
     const b=document.querySelector(`#flagSeg [data-f="${f}"]`);if(b)b.setAttribute("aria-pressed","true")});
 })();
-const _render=render;render=function(){_render();syncUrl()};
+const _render=render;render=function(){_render();syncUrl();showPick();fitPlace()};
+/* Ortsfeld so breit wie der Ortsname; zu lange Namen werden kleiner statt abgeschnitten */
+function fitPlace(){
+  const i=$("ort");if(!i)return;i.style.fontSize="";
+  const cs=getComputedStyle(i),fs=parseFloat(cs.fontSize);
+  let m=fitPlace.m;if(!m){m=fitPlace.m=document.createElement("span");m.setAttribute("aria-hidden","true");
+    m.style.cssText="position:absolute;left:-9999px;top:0;visibility:hidden;white-space:pre;font:inherit;text-transform:uppercase";i.parentElement.appendChild(m)}
+  m.textContent=i.value||i.placeholder;
+  let w=m.getBoundingClientRect().width+fs*.35;
+  const max=i.parentElement.clientWidth;
+  if(w>max){i.style.fontSize=Math.max(16,fs*max/w*.97)+"px";w=max}
+  i.style.width=Math.max(w,fs*3)+"px";
+}
+$("ort").addEventListener("input",fitPlace);addEventListener("resize",fitPlace);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitPlace);
+/* Handy: Liste und Karte umschalten */
+const MOBILE=matchMedia("(max-width:860px)");
+const ICON_MAP='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>';
+const ICON_LIST='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>';
+function isMapView(){return document.body.classList.contains("mapview")}
+function showPick(){
+  const p=$("pick");if(!p)return;
+  const c=isMapView()&&state.open&&document.querySelector(`#list .card[data-id="${CSS.escape(state.open)}"]`);
+  p.innerHTML=c?c.outerHTML:"";
+}
+function setView(map,init){
+  document.body.classList.toggle("mapview",map);
+  const b=$("viewToggle");b.innerHTML=map?ICON_LIST+"Liste":ICON_MAP+"Karte";b.setAttribute("aria-pressed",map);
+  if(init)return;
+  if(map){document.querySelector(".mapbox").scrollIntoView({block:"start"});
+    if(leaf.map)requestAnimationFrame(()=>{leaf.map.invalidateSize();render()});else showPick()}
+  else{showPick();const c=state.open&&document.querySelector(`#list .card[data-id="${CSS.escape(state.open)}"]`);
+    if(c)c.scrollIntoView({block:"center"});else $("count").scrollIntoView({block:"start"})}
+}
+$("viewToggle").addEventListener("click",()=>setView(!isMapView()));
+$("pick").addEventListener("click",e=>{const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id,true)});
+MOBILE.addEventListener("change",()=>{if(!MOBILE.matches&&isMapView())setView(false);if(leaf.map)setTimeout(()=>leaf.map.invalidateSize(),60)});
+setView(false,true);
 search();
 // Als App installierbar + offline nutzbar
 if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
