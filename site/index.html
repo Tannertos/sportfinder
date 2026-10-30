@@ -725,7 +725,10 @@ function setView(map,init){
   const b=$("viewToggle");b.innerHTML=map?ICON_LIST+"Liste":ICON_MAP+"Karte";b.setAttribute("aria-pressed",map);
   if(init)return;
   if(map){document.querySelector(".mapbox").scrollIntoView({block:"start"});
-    if(leaf.map)requestAnimationFrame(()=>{leaf.map.invalidateSize();render()});else showPick()}
+    if(leaf.map)setTimeout(()=>{leaf.map.invalidateSize();
+      const r=state.open&&state.items.find(x=>x.id===state.open);
+      if(r)leaf.map.setView([r.lat,r.lon],16);else if(state.center)leaf.map.fitBounds(L.latLng(state.center).toBounds(state.radius*2000),{padding:[10,10]});
+      render()},60);else showPick()}
   else{showPick();const c=state.open&&document.querySelector(`#list .card[data-id="${CSS.escape(state.open)}"]`);
     if(c)c.scrollIntoView({block:"center"});else $("count").scrollIntoView({block:"start"})}
 }
