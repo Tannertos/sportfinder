@@ -676,7 +676,7 @@ function toggle(id,fromMap){
 /* ---------- Mitspielen: „Ich bin heute da“, feste Runden, Tipps zum Platz ----------
    Ohne Datenbank-Zugang (SB leer) läuft alles im Testmodus nur auf diesem Gerät.
    Mit Supabase-Projekt (Tabellen: pipeline/supabase.sql) sehen alle dieselben Einträge. */
-const SB={url:"",key:""};
+const SB={url:"https://ochuefalzygwghxrqysy.supabase.co",key:"sb_publishable_0keuy49P03QTV1oorh6ssg_iMsqJC7s"};
 const WD=["Mo","Di","Mi","Do","Fr","Sa","So"],LV={easy:"Anfänger willkommen",mid:"locker",pro:"ambitioniert"};
 const SOC={data:{checkins:[],rounds:[],joins:[],tips:[]},key:"",form:null,live:!!(SB.url&&SB.key),
   dev:(()=>{let d=store.get("sf_dev");if(!d){d=crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);store.set("sf_dev",d)}return d})(),
