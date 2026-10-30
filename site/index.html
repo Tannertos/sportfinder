@@ -1,6 +1,14 @@
 <meta charset="utf-8">
 <title>Sportfinder</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1d3a57">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sportfinder">
+<meta name="description" content="Sportart wählen und alle Möglichkeiten in der Nähe sehen: Vereine, freie Plätze, Studios und Hallen in ganz Deutschland.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
@@ -93,6 +101,10 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
 .status.live{border-color:var(--free)}
 .status.demo{border-color:var(--accent)}
 .status b{white-space:nowrap}
+.filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-bottom:6px}
+.filters .lbl{font-size:13px;color:var(--muted);margin-right:2px}
+.seg.small button{font-size:13px;padding:5px 11px}
+.sharebtn{background:var(--accent)!important;color:#fff!important;border-color:var(--accent)!important}
 .locbtn{font:inherit;font-size:14px;font-weight:600;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .locbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #leaf{height:460px;border-radius:10px;overflow:hidden;background:var(--bg)}
@@ -128,6 +140,16 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
     <div class="seg" id="typeSeg" role="group" aria-label="Art des Angebots"></div>
     <label class="radius" for="radius">Umkreis <input id="radius" type="range" min="1" max="15" step="1" value="5"> <b id="radiusOut">5 km</b></label>
     <button type="button" class="locbtn" id="locBtn">Mein Standort</button>
+    <button type="button" class="locbtn sharebtn" id="shareBtn">Suche teilen</button>
+  </div>
+  <div class="filters">
+    <span class="lbl">Filter:</span>
+    <div class="seg small" id="flagSeg" role="group" aria-label="Filter">
+      <button type="button" data-f="free" aria-pressed="false">kostenlos</button>
+      <button type="button" data-f="lit" aria-pressed="false">Flutlicht</button>
+      <button type="button" data-f="covered" aria-pressed="false">überdacht / Halle</button>
+      <button type="button" data-f="noschool" aria-pressed="false">ohne Schulgelände</button>
+    </div>
   </div>
   <div class="main">
     <section aria-label="Ergebnisse">
@@ -257,7 +279,7 @@ const $=id=>document.getElementById(id);
 const IS_APPLE=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const state={sport:store.get("sf_sport")||"basketball",place:store.get("sf_place")||"Essen-Rüttenscheid",center:null,types:new Set(["verein","platz","buchbar"]),radius:5,open:null,mode:"loading",items:[],fetched:null,reqId:0};
+const state={sport:store.get("sf_sport")||"basketball",place:store.get("sf_place")||"Essen-Rüttenscheid",center:null,types:new Set(["verein","platz","buchbar"]),flags:new Set(),radius:5,open:null,mode:"loading",items:[],fetched:null,reqId:0};
 if(!SPORTS[state.sport])state.sport="basketball";
 
 $("sport").innerHTML=GROUPS.map(([g,,list])=>`<optgroup label="${g}">${list.map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</optgroup>`).join("");
@@ -351,7 +373,9 @@ function toItem(el){
   if(t.access)info.Zugang={yes:"öffentlich",permissive:"geduldet",private:"privat",members:"nur Mitglieder",customers:"nur Kunden",no:"kein Zugang",destination:"öffentlich"}[t.access]||t.access;
   if(t.fee)info.Kosten=t.fee==="no"?"kostenlos":t.fee==="yes"?"kostenpflichtig":t.fee;
   const phone=t.phone||t["contact:phone"]; if(phone)info.Telefon=phone;
-  return {id:el.type[0]+el.id,type,name,lat,lon,tags,info,web:safeUrl(t.website||t["contact:website"]||t.url),osm:`https://www.openstreetmap.org/${el.type}/${el.id}`,named:!!t.name,base:(!t.name&&!t.operator&&!t._club&&ck!=="schule"&&ck!=="spielplatz")?base:null};
+  return {id:el.type[0]+el.id,type,name,lat,lon,tags,info,web:safeUrl(t.website||t["contact:website"]||t.url),osm:`https://www.openstreetmap.org/${el.type}/${el.id}`,named:!!t.name,
+    flags:{free:t.fee==="no"||(type==="platz"&&t.fee!=="yes"),lit:t.lit==="yes",
+      covered:t.covered==="yes"||t.indoor==="yes"||["sports_hall","fitness_centre","ice_rink","bowling_alley"].includes(t.leisure),school:ck==="schule"},base:(!t.name&&!t.operator&&!t._club&&ck!=="schule"&&ck!=="spielplatz")?base:null};
 }
 
 /* ---------- Offene Daten: Kacheln aus Overture/Foursquare (monatlich erzeugt) ---------- */
@@ -376,7 +400,7 @@ async function openPlaces(sportKey,lat,lon,radiusKm){
   return rows.filter(r=>r[3].includes(sportKey)).map((r,i)=>{
     const [name,la,lo,sports,type,web,tel,addr,src]=r,info={};
     if(addr)info.Adresse=addr; if(tel)info.Telefon=tel;
-    return {id:"o"+la+lo+i,type,name,lat:la,lon:lo,tags:[],info,web:safeUrl(web),osm:null,named:true,
+    return {id:"o"+la+lo+i,type,name,lat:la,lon:lo,tags:[],info,web:safeUrl(web),osm:null,named:true,flags:{covered:type==="buchbar"},
       src:src.split(",").map(x=>SRC[x]||x).join(" + ")};
   });
 }
@@ -476,7 +500,8 @@ function goDemo(){
 function results(){
   if(!state.center)return [];
   const [la,lo]=state.center;
-  return state.items.filter(d=>state.types.has(d.type)).map(d=>({...d,dist:km(la,lo,d.lat,d.lon)})).filter(d=>d.dist<=state.radius)
+  const F=state.flags,ok=d=>{const f=d.flags||{};return (!F.has("free")||f.free)&&(!F.has("lit")||f.lit)&&(!F.has("covered")||f.covered)&&(!F.has("noschool")||!f.school)};
+  return state.items.filter(d=>state.types.has(d.type)&&ok(d)).map(d=>({...d,dist:km(la,lo,d.lat,d.lon)})).filter(d=>d.dist<=state.radius)
     .sort((a,b)=>(a.dist-b.dist)-(b.named-a.named)*0.4);
 }
 function render(){
@@ -502,7 +527,7 @@ function render(){
       ${open?`<span class="detail">${Object.keys(r.info).length?`<dl>${Object.entries(r.info).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}${r.src?`<dt>Quelle</dt><dd>${esc(r.src)}</dd>`:""}</dl>`:`<span>Keine weiteren Angaben${r.src?" · Quelle: "+esc(r.src):""}.</span>`}
         <span style="display:flex;flex-wrap:wrap;gap:14px">${routes}${r.web?`<a href="${esc(r.web)}" target="_blank" rel="noopener">Website →</a>`:""}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name+" "+(r.info.Adresse||r.lat.toFixed(5)+","+r.lon.toFixed(5)))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen (Google) →</a></span></span>`:""}
     </div>`}).join("")+(res.length>shown.length?`<div class="empty">Die nächsten ${shown.length} von ${res.length} werden angezeigt. Verkleinere den Umkreis für eine kürzere Liste.</div>`:"")
-    :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`}</div>`;
+    :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":(state.flags.size?`Mit den gewählten Filtern gibt es im Umkreis von ${state.radius} km nichts. Nimm einen Filter heraus oder zieh den Umkreis größer.`:`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`)}</div>`;
   if(state.mode==="live"&&leaf.map)drawLeaflet(res); else drawSvg(res);
 }
 
@@ -560,6 +585,22 @@ $("ort").addEventListener("change",e=>{const v=e.target.value.trim();if(!v)retur
 let rT;$("radius").addEventListener("input",e=>{state.radius=+e.target.value;render();
   clearTimeout(rT);if(state.mode==="live"&&state.fetched&&state.radius>state.fetched.r)rT=setTimeout(search,600)});
 $("typeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const t=b.dataset.t;if(state.types.has(t)&&state.types.size>1)state.types.delete(t);else state.types.add(t);render()});
+$("flagSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const f=b.dataset.f;
+  state.flags.has(f)?state.flags.delete(f):state.flags.add(f);b.setAttribute("aria-pressed",state.flags.has(f));syncUrl();render()});
+/* Teilen-Link: Suche steckt in der Adresse (?s=Sportart&o=Ort&r=Umkreis&f=Filter) */
+function syncUrl(){
+  try{const u=new URL(location.href);u.search="";
+    u.searchParams.set("s",state.sport);if(state.place!=="Mein Standort")u.searchParams.set("o",state.place);
+    u.searchParams.set("r",state.radius);if(state.flags.size)u.searchParams.set("f",[...state.flags].join(","));
+    history.replaceState(null,"",u)}catch(e){}
+}
+function shareText(){return `${SPORTS[state.sport].label} in ${state.place==="Mein Standort"?"meiner Nähe":state.place} – Sportfinder`}
+$("shareBtn").addEventListener("click",async()=>{
+  syncUrl();const url=location.href,text=shareText();
+  if(navigator.share){try{await navigator.share({title:"Sportfinder",text,url});return}catch(e){if(e&&e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(url);$("hint").textContent="Link kopiert – einfach in WhatsApp & Co. einfügen."}
+  catch(e){$("hint").textContent="Link: "+url}
+});
 $("locBtn").addEventListener("click",()=>{
   if(!navigator.geolocation){$("hint").textContent="Standort ist in diesem Browser nicht verfügbar.";return}
   $("hint").textContent="Standort wird ermittelt …";
@@ -587,5 +628,16 @@ $("freeForm").addEventListener("submit",e=>{
   $("hint").textContent=sp?`Verstanden: ${SPORTS[sp].label}${m?" in "+state.place:""}.`:"Diese Sportart kenne ich noch nicht. Probier z. B. Yoga, Padel, Boxen oder Klettern.";
   if(sp||m)runSearch();
 });
+// Suche aus geteiltem Link übernehmen
+(()=>{const q=new URLSearchParams(location.search);
+  if(q.get("s")&&SPORTS[q.get("s")])state.sport=q.get("s");
+  if(q.get("o")){state.place=q.get("o");$("ort").value=state.place}
+  if(q.get("r")){const r=Math.min(15,Math.max(1,+q.get("r")||5));state.radius=r;$("radius").value=r}
+  (q.get("f")||"").split(",").filter(f=>["free","lit","covered","noschool"].includes(f)).forEach(f=>{state.flags.add(f);
+    const b=document.querySelector(`#flagSeg [data-f="${f}"]`);if(b)b.setAttribute("aria-pressed","true")});
+})();
+const _render=render;render=function(){_render();syncUrl()};
 search();
+// Als App installierbar + offline nutzbar
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
