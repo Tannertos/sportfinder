@@ -121,6 +121,14 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
 .viewtoggle{display:none}
 .mapbox{position:sticky}
 #pick:empty{display:none}
+.card .km{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;align-items:flex-end}
+.fav{margin:2px -8px -6px auto;flex:none;width:38px;height:38px;border-radius:50%;border:0;background:transparent;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:0}
+.fav svg{width:22px;height:22px}
+.fav[aria-pressed="true"]{color:#e0245e}
+.fav[aria-pressed="true"] svg{fill:currentColor}
+.fav:hover{background:var(--bg)}
+.fav:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.card.isfav{border-left:3px solid #e0245e}
 .ask input::-webkit-calendar-picker-indicator{display:none!important}
 @media (max-width:860px){
   .band::after{width:200px;height:200px;right:-80px;top:-80px}
@@ -205,6 +213,7 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
       <button type="button" data-f="lit" aria-pressed="false">Flutlicht</button>
       <button type="button" data-f="covered" aria-pressed="false">überdacht / Halle</button>
       <button type="button" data-f="noschool" aria-pressed="false">ohne Schulgelände</button>
+      <button type="button" data-f="fav" aria-pressed="false">♥ Favoriten</button>
     </div>
   </div>
   <div class="main">
@@ -336,6 +345,11 @@ const DEMO=[
 const $=id=>document.getElementById(id);
 const IS_APPLE=/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
 const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+/* Favoriten: bleiben auf dem Handy gespeichert, ohne Konto */
+const FAV=(()=>{let m={};try{m=JSON.parse(store.get("sf_favs")||"{}")||{}}catch(e){}
+  return {has:id=>!!m[id],count:()=>Object.keys(m).length,
+    toggle(r){if(m[r.id])delete m[r.id];else m[r.id]={name:r.name,type:r.type,lat:r.lat,lon:r.lon,sport:state.sport,t:Date.now()};store.set("sf_favs",JSON.stringify(m));return !!m[r.id]}}})();
+const HEART='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.2 3.4 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.6 0 5.5 3.7 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z"/></svg>';
 const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const state={sport:store.get("sf_sport")||"basketball",place:store.get("sf_place")||"Essen-Rüttenscheid",center:null,types:new Set(["verein","platz","buchbar"]),flags:new Set(),radius:5,open:null,mode:"loading",items:[],fetched:null,reqId:0};
 if(!SPORTS[state.sport])state.sport="basketball";
@@ -458,7 +472,7 @@ async function openPlaces(sportKey,lat,lon,radiusKm){
   return rows.filter(r=>r[3].includes(sportKey)).map((r,i)=>{
     const [name,la,lo,sports,type,web,tel,addr,src]=r,info={};
     if(addr)info.Adresse=addr; if(tel)info.Telefon=tel;
-    return {id:"o"+la+lo+i,type,name,lat:la,lon:lo,tags:[],info,web:safeUrl(web),osm:null,named:true,flags:{covered:type==="buchbar"},
+    return {id:"o"+la+"_"+lo+"_"+name.length,type,name,lat:la,lon:lo,tags:[],info,web:safeUrl(web),osm:null,named:true,flags:{covered:type==="buchbar"},
       src:src.split(",").map(x=>SRC[x]||x).join(" + ")};
   });
 }
@@ -558,9 +572,9 @@ function goDemo(){
 function results(){
   if(!state.center)return [];
   const [la,lo]=state.center;
-  const F=state.flags,ok=d=>{const f=d.flags||{};return (!F.has("free")||f.free)&&(!F.has("lit")||f.lit)&&(!F.has("covered")||f.covered)&&(!F.has("noschool")||!f.school)};
+  const F=state.flags,ok=d=>{const f=d.flags||{};return (!F.has("free")||f.free)&&(!F.has("lit")||f.lit)&&(!F.has("covered")||f.covered)&&(!F.has("noschool")||!f.school)&&(!F.has("fav")||FAV.has(d.id))};
   return state.items.filter(d=>state.types.has(d.type)&&ok(d)).map(d=>({...d,dist:km(la,lo,d.lat,d.lon)})).filter(d=>d.dist<=state.radius)
-    .sort((a,b)=>(a.dist-b.dist)-(b.named-a.named)*0.4);
+    .sort((a,b)=>(FAV.has(b.id)-FAV.has(a.id))||((a.dist-b.dist)-(b.named-a.named)*0.4));
 }
 function render(){
   $("sport").value=state.sport;
@@ -568,7 +582,7 @@ function render(){
   document.querySelectorAll("#typeSeg button").forEach(b=>b.setAttribute("aria-pressed",state.types.has(b.dataset.t)));
   const res=results(),label=SPORTS[state.sport].label;
   const n={verein:0,platz:0,buchbar:0};res.forEach(r=>n[r.type]++);
-  $("count").innerHTML=`${res.length} ${res.length===1?"Möglichkeit":"Möglichkeiten"} für ${esc(label)}<span>${n.verein} Vereine · ${n.platz} Plätze · ${n.buchbar} Studios & Hallen</span>`;
+  $("count").innerHTML=`${res.length} ${res.length===1?"Möglichkeit":"Möglichkeiten"} für ${esc(label)}<span>${n.verein} Vereine · ${n.platz} Plätze · ${n.buchbar} Studios & Hallen${FAV.count()?` · ♥ ${FAV.count()} gemerkt`:""}</span>`;
   const shown=res.slice(0,120);
   $("list").innerHTML=res.length?shown.map(r=>{
     const t=TYPES[r.type],open=state.open===r.id,walk=Math.round(r.dist/4.8*60);
@@ -576,16 +590,17 @@ function render(){
     const gLink=`<a href="https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=walking" target="_blank" rel="noopener">Route in Google Maps →</a>`;
     const aLink=`<a href="https://maps.apple.com/?daddr=${dest}&q=${encodeURIComponent(r.name)}&dirflg=w" target="_blank" rel="noopener">Route in Apple Karten →</a>`;
     const routes=IS_APPLE?aLink+gLink:gLink+aLink;
-    return `<div class="card" role="button" tabindex="0" data-id="${r.id}" aria-expanded="${open}">
+    const fav=FAV.has(r.id);
+    return `<div class="card${fav?" isfav":""}" role="button" tabindex="0" data-id="${r.id}" aria-expanded="${open}">
       <span class="kind" style="background:var(${t.color})">${t.short}</span>
       <h3>${esc(r.name)}</h3>
-      <span class="km">${fmt(r.dist)}<small>${walk<45?walk+" Min. zu Fuß":Math.round(r.dist/15*60)+" Min. Rad"}</small></span>
+      <span class="km">${fmt(r.dist)}<small>${walk<45?walk+" Min. zu Fuß":Math.round(r.dist/15*60)+" Min. Rad"}</small><button type="button" class="fav" aria-pressed="${fav}" aria-label="${fav?"Aus Favoriten entfernen":"Zu Favoriten"}" title="${fav?"Aus Favoriten entfernen":"Merken"}">${HEART}</button></span>
       <span class="meta">${t.one}${r.info.Adresse?" · "+esc(r.info.Adresse):r.addr?" · "+esc(r.addr):""}</span>
       <span class="tags">${r.type==="platz"?'<span class="tag hot">Einfach hingehen</span>':""}${r.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</span>
       ${open?`<span class="detail">${Object.keys(r.info).length?`<dl>${Object.entries(r.info).map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}${r.src?`<dt>Quelle</dt><dd>${esc(r.src)}</dd>`:""}</dl>`:`<span>Keine weiteren Angaben${r.src?" · Quelle: "+esc(r.src):""}.</span>`}
         <span style="display:flex;flex-wrap:wrap;gap:14px">${routes}${r.web?`<a href="${esc(r.web)}" target="_blank" rel="noopener">Website →</a>`:""}<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name+" "+(r.info.Adresse||r.lat.toFixed(5)+","+r.lon.toFixed(5)))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen (Google) →</a></span></span>`:""}
     </div>`}).join("")+(res.length>shown.length?`<div class="empty">Die nächsten ${shown.length} von ${res.length} werden angezeigt. Verkleinere den Umkreis für eine kürzere Liste.</div>`:"")
-    :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":(state.flags.size?`Mit den gewählten Filtern gibt es im Umkreis von ${state.radius} km nichts. Nimm einen Filter heraus oder zieh den Umkreis größer.`:`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`)}</div>`;
+    :`<div class="empty">${state.mode==="demo"?"Im Demo-Modus gibt es nur Beispiele für ein paar Sportarten. Mit Live-Daten erscheinen hier echte Einträge aus OpenStreetMap.":(state.flags.has("fav")&&!res.length?`Hier hast du noch nichts gemerkt. Tipp bei einem Ort auf das Herz – dann steht er immer oben.`:state.flags.size?`Mit den gewählten Filtern gibt es im Umkreis von ${state.radius} km nichts. Nimm einen Filter heraus oder zieh den Umkreis größer.`:`Im Umkreis von ${state.radius} km nichts gefunden. Zieh den Umkreis größer oder probier einen anderen Ort.`)}</div>`;
   if(state.mode==="live"&&leaf.map)drawLeaflet(res); else drawSvg(res);
 }
 
@@ -634,7 +649,9 @@ function toggle(id,fromMap){
 }
 
 /* ---------- Events ---------- */
-$("list").addEventListener("click",e=>{const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id)});
+function favClick(e){const b=e.target.closest(".fav");if(!b)return false;const c=b.closest(".card"),r=state.items.find(x=>x.id===c.dataset.id);
+  if(r){FAV.toggle(r);render()}return true}
+$("list").addEventListener("click",e=>{if(favClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id)});
 $("list").addEventListener("keydown",e=>{const c=e.target.closest(".card");if(c&&e.target===c&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(c.dataset.id)}});
 $("map").addEventListener("click",e=>{const p=e.target.closest(".pin");if(p)toggle(p.dataset.id)});
 $("map").addEventListener("keydown",e=>{const p=e.target.closest(".pin");if(p&&(e.key==="Enter"||e.key===" ")){e.preventDefault();toggle(p.dataset.id)}});
@@ -650,7 +667,7 @@ $("flagSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(
 function syncUrl(){
   try{const u=new URL(location.href);u.search="";
     u.searchParams.set("s",state.sport);if(state.place!=="Mein Standort")u.searchParams.set("o",state.place);
-    u.searchParams.set("r",state.radius);if(state.flags.size)u.searchParams.set("f",[...state.flags].join(","));
+    u.searchParams.set("r",state.radius);const fl=[...state.flags].filter(f=>f!=="fav");if(fl.length)u.searchParams.set("f",fl.join(","));
     history.replaceState(null,"",u)}catch(e){}
 }
 function shareText(){return `${SPORTS[state.sport].label} in ${state.place==="Mein Standort"?"meiner Nähe":state.place} – Sportfinder`}
@@ -733,7 +750,7 @@ function setView(map,init){
     if(c)c.scrollIntoView({block:"center"});else $("count").scrollIntoView({block:"start"})}
 }
 $("viewToggle").addEventListener("click",()=>setView(!isMapView()));
-$("pick").addEventListener("click",e=>{const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id,true)});
+$("pick").addEventListener("click",e=>{if(favClick(e))return;const c=e.target.closest(".card");if(c&&!e.target.closest("a"))toggle(c.dataset.id,true)});
 MOBILE.addEventListener("change",()=>{if(!MOBILE.matches&&isMapView())setView(false);if(leaf.map)setTimeout(()=>leaf.map.invalidateSize(),60)});
 setView(false,true);
 search();
