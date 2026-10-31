@@ -40,7 +40,7 @@ CAT_RULES = [
     ("taekwondo",   r"taekwondo"),
     ("kampfsport",  r"martial|karate|judo|taekwondo|aikido|jiu|ju_?jutsu|kickbox|boxing|mma|kung|krav|self.?defen|wing.?chun|capoeira|muay"),
     ("fechten",     r"fencing"),
-    ("crossfit",    r"crossfit|functional.?training|bootcamp"),
+    ("crossfit",    r"crossfit|functional.?training|bootcamp|hyrox|\bhiit\b"),
     ("fitness",     r"(^|[^a-z])gyms?([^a-z]|$)|fitness.?(cent|studio|club)|health.?club|weight.?lift|bodybuild"),
     ("calisthenics",r"calisthenic|outdoor.?gym|fitness.?trail"),
     ("trampolin",   r"trampoline"),
@@ -59,7 +59,7 @@ CAT_RULES = [
     ("reiten",      r"horse|equestrian|riding.?school"),
     ("eislaufen",   r"ice.?skat|ice.?rink|ice.?hockey|skating.?rink"),
     ("skaten",      r"skate.?park|skateboard|roller|inline"),
-    ("fussball",    r"soccer|futsal|football"),
+    ("fussball",    r"soccer|futsal|football|beach.?soccer"),
     ("football",    r"american.?football"),
     ("basketball",  r"basketball"),
     ("volleyball",  r"volleyball"),
@@ -79,15 +79,61 @@ CAT_RULES = [
     ("schiessen",   r"shooting|gun.?club|rifle"),
     ("boule",       r"boule|bocce|petanque|boccia"),
     ("schach",      r"chess"),
-    ("discgolf",    r"disc.?golf|frisbee"),
+    ("discgolf",    r"disc.?golf"),
+    # --- Ergänzung Okt. 2026 (siehe neue_sportarten.py) ---
+    ("floorball", r"floorball|unihockey"),
+    ("ultimate", r"ultimate"),
+    ("lacrosse", r"lacrosse"),
+    ("faustball", r"faustball|fistball"),
+    ("teqball", r"teqball"),
+    ("roundnet", r"roundnet|spikeball"),
+    ("footgolf", r"foot.?golf"),
+    ("pickleball", r"pickleball"),
+    ("poledance", r"pole.?danc|pole.?fitness"),
+    ("aerial", r"aerial"),
+    ("barre", r"\bbarre\b"),
+    ("indoorcycling", r"spin.?class|spinning|indoor.?cycl|cycling.?studio"),
+    ("ems", r"\bems\b|electro.?muscle"),
+    ("jumping", r"jumping.?fitness"),
+    ("aquafitness", r"aqua.?(fit|aerob|gym|cycl)|water.?aerobic"),
+    ("turnen", r"gymnastic"),
+    ("cheerleading", r"cheerlead"),
+    ("akrobatik", r"acrobat|circus.?school"),
+    ("taichi", r"tai.?chi|qi.?gong|qigong"),
+    ("kraftsport", r"powerlift|weightlift|strongman"),
+    ("parkour", r"parkour|ninja|obstacle.?course"),
+    ("ringen", r"wrestl"),
+    ("mma", r"\bmma\b|mixed.?martial|brazilian.?jiu|\bbjj\b|grappl"),
+    ("selbstverteidigung", r"krav|self.?defen|wing.?(chun|tsun)"),
+    ("jujutsu", r"ju.?jutsu|ju.?jitsu|(?<!brazilian )jiu.?jitsu"),
+    ("wasserball", r"water.?polo"),
+    ("surfen", r"(?<!wind)(?<!kite)surf(ing|.?school|.?park|.?club)"),
+    ("windkite", r"windsurf|kite.?surf|kite.?board"),
+    ("wakeboard", r"wakeboard|water.?ski|cable.?park"),
+    ("triathlon", r"triathlon"),
+    ("wintersport", r"\bski(ing|.?resort|.?area|.?school|.?hall|.?club)?\b|snowboard|biathlon"),
+    ("rodeln", r"toboggan|sled|bobsleigh|luge|alpine.?coaster"),
+    ("slackline", r"slackline"),
+    ("motorsport", r"\bkart|go.?kart|motocross|race.?track|racetrack|motorsport"),
+    ("luftsport", r"paraglid|hang.?glid|gliding|skydiv|parachut|flying.?club|aero.?club|wind.?tunnel"),
+    ("curling", r"curling|ice.?stock"),
+    ("hundesport", r"dog.?(agility|sport|training)"),
+    ("lasertag", r"laser.?tag"),
+    ("paintball", r"paintball|airsoft"),
+    ("tischfussball", r"foosball|table.?football|table.?soccer"),
+    ("cornhole", r"cornhole"),
 ]
 CAT_RULES = [(k, re.compile(rx, re.I)) for k, rx in CAT_RULES]
 # Vor dem Prüfen dieser Sportarten werden verwechselbare Begriffe entfernt
 STRIP = {
     "tennis": re.compile(r"table.?tennis", re.I),
-    "golf": re.compile(r"mini.?golf|miniature.?golf|adventure.?golf|disc.?golf", re.I),
+    "golf": re.compile(r"mini.?golf|miniature.?golf|adventure.?golf|disc.?golf|foot.?golf", re.I),
     "hockey": re.compile(r"ice.?hockey", re.I),
-    "fussball": re.compile(r"american.?football", re.I),
+    "fussball": re.compile(r"american.?football|flag.?football|table.?football|table.?soccer|foot.?golf", re.I),
+    "radsport": re.compile(r"indoor.?cycl|cycling.?studio|spin.?class", re.I),
+    "fitness": re.compile(r"pole.?fitness|aqua.?fit\w*|jumping.?fitness", re.I),
+    "yoga": re.compile(r"aerial.?yoga|acro.?yoga", re.I),
+    "kampfsport": re.compile(r"brazilian.?jiu.?jitsu", re.I),
 }
 
 # Kategorien, die nach Sport klingen, aber Läden etc. sind -> raus
@@ -123,10 +169,52 @@ NAME_RULES = [
     ("kegeln", r"kegel"), ("bowling", r"bowling|kegel"),
     ("schach", r"schach"), ("fechten", r"fecht"), ("radsport", r"radsport|\brv\b|radfahrer|bmx"),
     ("laufen", r"leichtathletik|lauftreff|\blg\b"),
-    ("fitness", r"fitness|\bgym\b|kraftsport"),
+    ("fitness", r"fitness|\bgym\b"),
+    ("floorball", r"floorball|unihockey"),
+    ("ultimate", r"ultimate|frisbee"),
+    ("lacrosse", r"lacrosse"),
+    ("faustball", r"faustball"),
+    ("teqball", r"teqball"),
+    ("roundnet", r"roundnet|spikeball"),
+    ("footgolf", r"footgolf|fußballgolf|fussballgolf"),
+    ("pickleball", r"pickleball"),
+    ("poledance", r"pole.?dance|pole.?fitness|pole.?sport"),
+    ("aerial", r"aerial|luftakrobatik|vertikaltuch"),
+    ("barre", r"\bbarre\b"),
+    ("indoorcycling", r"spinning|indoor.?cycling|cycle.?studio"),
+    ("ems", r"\bems\b|bodystreet|xbody"),
+    ("jumping", r"jumping"),
+    ("aquafitness", r"aqua.?fit|aquafitness|aqua.?gym|wassergymnastik"),
+    ("turnen", r"turn(verein|gemeinde|erbund|erschaft|abteilung|en)|gymnastik"),
+    ("cheerleading", r"cheer"),
+    ("akrobatik", r"akrobatik|artistik|zirkus"),
+    ("taichi", r"tai.?chi|qi.?gong"),
+    ("kraftsport", r"gewichtheb|kraftdreikampf|powerlifting|kraftsport"),
+    ("parkour", r"parkour|ninja"),
+    ("ringen", r"ringer|ringen\b|wrestling"),
+    ("mma", r"\bmma\b|bjj|grappling"),
+    ("selbstverteidigung", r"krav|selbstverteidigung|wing.?(chun|tsun)"),
+    ("jujutsu", r"ju.?jutsu|ju.?jitsu"),
+    ("wasserball", r"wasserball"),
+    ("surfen", r"surf"),
+    ("windkite", r"windsurf|kite"),
+    ("wakeboard", r"wasserski|wakeboard"),
+    ("triathlon", r"triathlon|tri-?team"),
+    ("wintersport", r"ski(club|verein|-club|zunft)|snowboard"),
+    ("rodeln", r"rodel|bob(sport|club)"),
+    ("slackline", r"slackline"),
+    ("motorsport", r"motorsport|\bkart|\bmsc\b|\bamc\b|motocross"),
+    ("luftsport", r"luftsport|segelflug|flieger|aero.?club|gleitschirm|paraglid"),
+    ("curling", r"curling|eisstock|stockschütz"),
+    ("hundesport", r"hundesport|hundeverein|agility|gebrauchshund"),
+    ("lasertag", r"laser.?tag"),
+    ("paintball", r"paintball|airsoft"),
+    ("tischfussball", r"tischfußball|tischfussball|tischkicker"),
+    ("cornhole", r"cornhole"),
 ]
 NAME_RULES = [(k, re.compile(rx, re.I)) for k, rx in NAME_RULES]
 APP_SPORTS = {k for k, _ in CAT_RULES}
+STUDIO_SPECIALS = {"poledance", "aerial", "barre", "indoorcycling", "ems", "jumping", "aquafitness", "kraftsport", "parkour", "taichi"}
 
 CLUB_CAT = re.compile(r"club|league|association|team|verein|federation", re.I)
 CLUB_NAME = re.compile(r"\be\.\s?v\.|verein|\b(tus|sv|tv|sc|djk|bc|ttc|tc|vfl|vfb|spvgg|fc|tsv|ssv|bv|sg|tg|ttv|bsv|esv|htc|thc|sf|ksv|asv|psv|hsv|rsv|tsg)\b", re.I)
@@ -142,7 +230,11 @@ def sports_for(cat_text, name):
         found = [k for k, rx in NAME_RULES if rx.search(name or "") and k in APP_SPORTS]
     # Kampfsportschulen: Disziplin aus dem Namen ("Judo Club Essen" -> auch judo)
     if "kampfsport" in found:
-        found += [k for k, rx in NAME_RULES if k in ("judo", "karate", "taekwondo", "boxen") and rx.search(name or "")]
+        found += [k for k, rx in NAME_RULES if k in ("judo", "karate", "taekwondo", "boxen", "ringen", "mma",
+                                                    "selbstverteidigung", "jujutsu") and rx.search(name or "")]
+    # Studios mit Spezialangebot, die nur als "Gym"/"Tanz"/"Yoga" einsortiert sind ("Pole Fitness Ruhr")
+    if found and set(found) <= {"fitness", "tanzen", "yoga", "pilates", "crossfit"}:
+        found += [k for k, rx in NAME_RULES if k in STUDIO_SPECIALS and rx.search(name or "")]
     # Falsch als "gym" einsortiert, Name verrät aber eine andere Sportart ("Schachclub ...")
     if found == ["fitness"]:
         by_name = [k for k, rx in NAME_RULES if k != "fitness" and k in APP_SPORTS and rx.search(name or "")]
