@@ -17,6 +17,7 @@ self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.pathname.includes("/bolle/")) return; // Test-Version mit Bolle: nicht cachen, nicht anfassen
 
   // App selbst: immer zuerst frisch aus dem Netz, sonst aus dem Speicher
   if (req.mode === "navigate" || (url.origin === location.origin && url.pathname.endsWith("index.html"))) {
