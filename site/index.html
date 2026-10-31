@@ -963,7 +963,8 @@ VIEWS.place=v=>{const p=PLC.get(v.id);if(!p)return `<div class="scroll st pad"><
     ${rows.length||p.web?`<div class="sect"><div class="row"><span class="h3">Infos</span></div><div class="ccard" style="cursor:default"><dl class="infos">${rows.map(([a,b])=>`<dt>${a}</dt><dd>${esc(b)}</dd>`).join("")}</dl>${p.web?`<a class="lnk" href="${esc(p.web)}" target="_blank" rel="noopener">Website ${I("external","ico--s")}</a>`:""}<a class="lnk" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name+" "+(info.Adresse||dest))}" target="_blank" rel="noopener">Öffnungszeiten & Bewertungen bei Google ${I("external","ico--s")}</a></div></div>`:""}
     <div class="sect"><div class="row"><span class="h3">Tipps</span></div>${tipsOf(p).slice(0,6).map(t=>`<div class="ccard" style="cursor:default;margin-bottom:10px;padding:12px 14px"><div class="t">„${esc(t.text)}“</div><div class="tm" style="font-size:12.5px;margin-top:4px">${esc(t.nick)}</div></div>`).join("")}
      <form id="tipForm" class="row"><div class="field" style="flex:1"><input id="tipIn" maxlength="140" placeholder="Dein Tipp zum Ort" aria-label="Dein Tipp zum Ort"></div><button class="cbtn cbtn--sm" style="height:54px" aria-label="Tipp senden">${I("chevron-right")}</button></form></div>
-    <div class="sect"><p class="tm" style="font-size:12.5px">Daten: ${esc(p.src||"OpenStreetMap-Mitwirkende")}.${OUT(p)?" Wetter: Deutscher Wetterdienst (über Bright Sky).":""}</p></div>
+    <div class="sect"><p class="tm" style="font-size:12.5px">Daten: ${esc(p.src||"OpenStreetMap-Mitwirkende")}.${OUT(p)?" Wetter: Deutscher Wetterdienst (über Bright Sky).":""}</p>
+     <button class="lnk" data-act="report" style="border:0;background:none;padding:0;cursor:pointer">${I("alert","ico--s")}Stimmt was nicht?</button></div>
    </div></div>
    <div class="bottomcta" style="${sv(k)}"><a class="cbtn" href="${IS_APPLE?a:g}" target="_blank" rel="noopener">${I("route")}Hinfahren</a></div>`};
 
@@ -1057,6 +1058,21 @@ async function share(p){const u=new URL(location.origin+location.pathname);u.sea
   if(navigator.share){try{await navigator.share({title:"Sportfinder",text,url:u.href});return}catch(e){if(e&&e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(text+" "+u.href);toast("Link kopiert – schick ihn rum!","wave")}catch(e){toast("Teilen geht hier nicht.","sad")}}
 
+/* ---------- Fehler melden ---------- */
+let rp=null;
+function openReport(){const v=S.stack.at(-1),p=PLC.get(v.id);rp={p,k:v.k,kind:null};
+  sheet(`<div class="h2">Was stimmt nicht?</div><p class="tm" style="margin-top:-6px">${esc(p.name)}</p>
+   <div class="opts" id="rpOpts">${[["sportart","Falsche Sportart",`Hier kann man kein ${esc(sportName(v.k))} machen`],["gibts_nicht","Gibt's nicht (mehr)","Geschlossen, abgerissen oder nie da gewesen"],["sonstiges","Etwas anderes","Name, Adresse, Art des Orts …"]]
+     .map(([k,t,d])=>`<button class="opt" data-rp="${k}" aria-pressed="false"><span><span>${t}</span><small>${d}</small></span><span class="chk">${I("check","ico--s")}</span></button>`).join("")}</div>
+   <div class="field"><input id="rpNote" maxlength="200" placeholder="Kurz erklären (optional)" aria-label="Kurz erklären"></div>
+   <p class="soc-err" id="rpErr" role="alert"></p><button class="cbtn" id="rpGo" disabled>Melden</button>`)}
+async function sendReport(){if(!rp||!rp.kind)return;const b=$("#rpGo");b.disabled=true;
+  const row={place_id:rp.p.id,place_name:String(rp.p.name).slice(0,120),lat:+rp.p.lat.toFixed(5),lon:+rp.p.lon.toFixed(5),sport:rp.k,kind:rp.kind,note:($("#rpNote").value||"").trim().slice(0,200)||null,device:SOC.dev};
+  try{if(SOC.live){const r=await fetch(SB.url.replace(/\/$/,"")+"/rest/v1/reports",{method:"POST",body:JSON.stringify(row),headers:{apikey:SB.key,Authorization:"Bearer "+SB.key,"Content-Type":"application/json",Prefer:"return=minimal"}});if(!r.ok)throw 0}
+    else{const a=LOCAL.get("reports");a.push(row);LOCAL.put("reports",a)}
+    closeSheet();toast("Danke! Wir schauen uns das an.","love")}
+  catch(e){b.disabled=false;$("#rpErr").textContent="Hat nicht geklappt – bitte später noch einmal versuchen."}}
+
 /* ---------- Klicks ---------- */
 document.addEventListener("click",e=>{const t=e.target;
   if(t.closest("[data-close]")){closeSheet();return}
@@ -1070,6 +1086,8 @@ document.addEventListener("click",e=>{const t=e.target;
   const ckb=t.closest("[data-ck]");if(ckb){ck.opt=ck.opts[+ckb.dataset.ck];$$("#ckOpts .opt").forEach(b=>b.setAttribute("aria-pressed",b===ckb));ckWx();return}
   const lv=t.closest("[data-lv]");if(lv){ck.lv=lv.dataset.lv;$$("#ckLvl .tog-chip").forEach(b=>b.setAttribute("aria-pressed",b===lv));return}
   for(const a of ["r","day","time"]){const x=t.closest(`[data-${a}]`);if(x&&x.closest("#sheet")){$$(`#sheet [data-${a}]`).forEach(b=>b.setAttribute("aria-pressed",b===x));return}}
+  const rk=t.closest("[data-rp]");if(rk){rp.kind=rk.dataset.rp;$$("#rpOpts .opt").forEach(b=>b.setAttribute("aria-pressed",b===rk));$("#rpGo").disabled=false;return}
+  if(t.closest("#rpGo")){sendReport();return}
   if(t.closest("#ckGo")){doCheckin();return}
   if(t.closest("#nrGo")){doRound();return}
   if(t.closest("#placeGo")){placeDone();return}
@@ -1083,6 +1101,7 @@ document.addEventListener("click",e=>{const t=e.target;
   if(act==="wider"){if(state.radius>=15){openPlaceSheet();return}state.radius=RADII[RADII.indexOf(state.radius)+1];store.set("sf_r",state.radius);reloadTop()}
   if(act==="clearf"){S.f={free:false,lit:false,covered:false,noschool:false};repaintTop()}
   if(act==="checkin")openCheckin();
+  if(act==="report")openReport();
   if(act==="newround")newRound();
   if(act==="save"){const p=PLC.get(v.id),had=FAV.has(p.id);FAV.toggle({...p,sport:v.k});repaintTop();if(!had){$(".heartbtn")?.classList.add("pop");SND.heart();toast("Gemerkt!","love")}else toast("Aus Gemerkt entfernt.","idle",()=>{FAV.toggle({...p,sport:v.k});repaintTop()})}
   if(act==="share")share(PLC.get(v.id));
