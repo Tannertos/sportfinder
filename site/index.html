@@ -269,30 +269,51 @@ footer{font-size:13px;color:var(--muted);padding-block:0 32px}
 const GROUPS=[
  ["Ballsport",true,[
   ["basketball","Basketball",{osm:"basketball",keys:["basketball","streetball","basket","korb"]}],
-  ["fussball","Fußball",{osm:"soccer",keys:["fußball","fussball","kicken","bolzen","soccer"]}],
+  ["fussball","Fußball",{osm:"soccer|futsal|beachsoccer",keys:["fußball","fussball","kicken","bolzen","soccer","futsal","beachsoccer","bolzplatz"]}],
   ["volleyball","Volleyball",{osm:"volleyball|beachvolleyball",keys:["volleyball","beachvolleyball","beach"]}],
   ["handball","Handball",{osm:"handball",keys:["handball"]}],
-  ["hockey","Hockey",{osm:"field_hockey|hockey",keys:["hockey","feldhockey","hallenhockey"]}],
+  ["hockey","Hockey",{osm:"field_hockey|hockey|roller_hockey|inline_hockey",keys:["hockey","feldhockey","hallenhockey","inlinehockey","rollhockey"]}],
   ["rugby","Rugby",{osm:"rugby|rugby_union|rugby_league",keys:["rugby"]}],
-  ["football","American Football",{osm:"american_football",keys:["american football","football"]}],
+  ["football","American Football",{osm:"american_football|flag_football",keys:["american football","football","flag football"]}],
   ["baseball","Baseball & Softball",{osm:"baseball|softball",keys:["baseball","softball"]}],
-  ["cricket","Cricket",{osm:"cricket",keys:["cricket"]}]
+  ["cricket","Cricket",{osm:"cricket",keys:["cricket"]}],
+  ["floorball","Floorball & Unihockey",{osm:"floorball",name:"floorball|unihockey",keys:["floorball", "unihockey"]}],
+  ["ultimate","Ultimate Frisbee",{osm:"ultimate|ultimate_frisbee",keys:["ultimate", "ultimate frisbee", "frisbee"]}],
+  ["lacrosse","Lacrosse",{osm:"lacrosse",keys:["lacrosse"]}],
+  ["faustball","Faustball",{osm:"faustball|fistball",keys:["faustball"]}],
+  ["teqball","Teqball",{osm:"teqball",keys:["teqball"]}],
+  ["roundnet","Roundnet (Spikeball)",{osm:"roundnet|spikeball",keys:["roundnet", "spikeball"]}],
+  ["footgolf","Footgolf",{osm:"footgolf",keys:["footgolf", "fußballgolf", "fussballgolf"]}]
  ]],
  ["Schlägersport",true,[
   ["tennis","Tennis",{osm:"tennis",keys:["tennis"]}],
   ["tischtennis","Tischtennis",{osm:"table_tennis",keys:["tischtennis","ping pong","pingpong","platte"]}],
   ["badminton","Badminton",{osm:"badminton",keys:["badminton","federball"]}],
   ["padel","Padel",{osm:"padel",keys:["padel"]}],
-  ["squash","Squash",{osm:"squash",keys:["squash"]}]
+  ["squash","Squash",{osm:"squash",keys:["squash"]}],
+  ["pickleball","Pickleball",{osm:"pickleball",keys:["pickleball"]}]
  ]],
  ["Fitness & Kurse",false,[
   ["fitness","Fitnessstudio",{osm:"fitness|weightlifting|bodybuilding",extra:['["leisure"="fitness_centre"]'],keys:["fitness","fitnessstudio","gym","krafttraining","muckibude"]}],
   ["yoga","Yoga",{osm:"yoga",name:"yoga",keys:["yoga"]}],
   ["pilates","Pilates",{osm:"pilates",name:"pilates",keys:["pilates"]}],
-  ["crossfit","CrossFit & Functional",{osm:"crossfit",name:"crossfit|functional",keys:["crossfit","functional"]}],
+  ["crossfit","CrossFit & Functional",{osm:"crossfit|hyrox",name:"crossfit|functional",keys:["crossfit","functional","hyrox","hiit","bootcamp"]}],
   ["calisthenics","Calisthenics & Outdoor-Fitness",{osm:"calisthenics|fitness_station",extra:['["leisure"="fitness_station"]'],keys:["calisthenics","outdoor fitness","outdoor-fitness","trimm","klimmzug"]}],
-  ["tanzen","Tanzen",{osm:"dance|ballet",extra:['["amenity"="dancing_school"]','["leisure"="dance"]'],name:"tanzschule|tanzstudio|dance studio|ballettschule|zumba",keys:["tanzen","tanz","tanzkurs","zumba","ballett","salsa","hip hop"]}],
-  ["trampolin","Trampolin",{osm:"trampoline",extra:['["leisure"="trampoline_park"]'],keys:["trampolin"]}]
+  ["tanzen","Tanzen",{osm:"dance|ballet",extra:['["amenity"="dancing_school"]','["leisure"="dance"]'],name:"tanzschule|tanzstudio|dance studio|ballettschule|zumba",keys:["tanzen","tanz","tanzkurs","zumba","ballett","salsa","hip hop","high heels","heels dance","hip hop","salsa","tango","bauchtanz","standardtanz"]}],
+  ["trampolin","Trampolin",{osm:"trampoline",extra:['["leisure"="trampoline_park"]'],keys:["trampolin"]}],
+  ["poledance","Pole Dance & Pole Fitness",{osm:"pole_dance|pole_fitness",name:"pole.?dance|pole.?fitness|pole.?sport|pole.?studio",keys:["pole dance", "poledance", "pole fitness", "pole", "poledancing"]}],
+  ["aerial","Aerial Yoga, Tuch & Hoop",{osm:"aerial|aerial_yoga|aerial_silk",name:"aerial|luftakrobatik|vertikaltuch",keys:["aerial", "aerial yoga", "aerial hoop", "vertikaltuch", "luftakrobatik", "aerial silk"]}],
+  ["barre","Barre",{osm:"barre",name:"\\bbarre\\b",keys:["barre", "barre workout"]}],
+  ["indoorcycling","Indoor Cycling & Spinning",{osm:"indoor_cycling|spinning",name:"spinning|indoor.?cycling|cycle.?studio|indoorcycling",keys:["indoor cycling", "spinning", "indoorcycling", "cycling kurs"]}],
+  ["ems","EMS-Training",{osm:"ems",name:"\\bems\\b|bodystreet|easymotionskin|xbody",keys:["ems", "ems training", "elektrostimulation"]}],
+  ["jumping","Jumping Fitness",{osm:"jumping_fitness",name:"jumping",keys:["jumping fitness", "jumping", "trampolin fitness"]}],
+  ["aquafitness","Aqua-Fitness",{osm:"aqua_fitness|aquafitness",name:"aqua.?fit|aquafitness|aqua.?gym|aqua.?cycling",keys:["aqua fitness", "aquafitness", "aqua jogging", "aqua cycling", "wassergymnastik"]}],
+  ["turnen","Turnen & Gymnastik",{osm:"gymnastics|rhythmic_gymnastics|artistic_gymnastics",name:"turnhalle|turnverein|gymnastik",keys:["turnen", "gymnastik", "geräteturnen", "rhythmische sportgymnastik", "kinderturnen", "turnverein"]}],
+  ["cheerleading","Cheerleading",{osm:"cheerleading|cheer",name:"cheer",keys:["cheerleading", "cheer", "cheerdance"]}],
+  ["akrobatik","Akrobatik & Zirkus",{osm:"acrobatics|acrobatic_gymnastics|circus",name:"akrobatik|artistik|zirkusschule",keys:["akrobatik", "sportakrobatik", "acro", "zirkus", "artistik", "acro yoga"]}],
+  ["taichi","Tai Chi & Qigong",{osm:"tai_chi|qigong",name:"tai.?chi|qi.?gong",keys:["tai chi", "qigong", "qi gong", "taiji"]}],
+  ["kraftsport","Gewichtheben & Kraftdreikampf",{osm:"weightlifting|powerlifting|strongman",name:"gewichtheb|kraftdreikampf|powerlifting|kraftsport",keys:["gewichtheben", "kraftdreikampf", "powerlifting", "kraftsport", "strongman"]}],
+  ["parkour","Parkour & Ninja-Parcours",{osm:"parkour|freerunning|obstacle_course",name:"parkour|ninja",keys:["parkour", "freerunning", "ninja", "ninja warrior", "hindernisparcours"]}]
  ]],
  ["Kampfsport",false,[
   ["kampfsport","Kampfsport (alle)",{osm:"martial_arts|karate|judo|taekwondo|aikido|jiu-jitsu|ju-jitsu|kickboxing|boxing|wrestling|mma|kung_fu|krav_maga|muay_thai|wing_chun|capoeira",name:"kampfsport|martial arts|dojo",keys:["kampfsport","selbstverteidigung","mma","krav maga","kung fu","jiu jitsu","jiu-jitsu","ju-jutsu","wing chun"]}],
@@ -300,18 +321,26 @@ const GROUPS=[
   ["judo","Judo",{osm:"judo",keys:["judo"]}],
   ["karate","Karate",{osm:"karate",keys:["karate"]}],
   ["taekwondo","Taekwondo",{osm:"taekwondo",keys:["taekwondo"]}],
-  ["fechten","Fechten",{osm:"fencing",keys:["fechten"]}]
+  ["fechten","Fechten",{osm:"fencing",keys:["fechten"]}],
+  ["ringen","Ringen",{osm:"wrestling",name:"ringer|wrestling",keys:["ringen", "ringer", "wrestling"]}],
+  ["mma","MMA & Brazilian Jiu-Jitsu",{osm:"mma|mixed_martial_arts|brazilian_jiu-jitsu|bjj|grappling",name:"\\bmma\\b|bjj|grappling",keys:["mma", "bjj", "brazilian jiu jitsu", "grappling", "free fight"]}],
+  ["selbstverteidigung","Selbstverteidigung & Krav Maga",{osm:"krav_maga|self_defence|self_defense|wing_chun|wing_tsun",name:"krav|selbstverteidigung|wing.?(chun|tsun)",keys:["selbstverteidigung", "krav maga", "wing chun", "wing tsun", "frauen selbstverteidigung"]}],
+  ["jujutsu","Ju-Jutsu & Jiu-Jitsu",{osm:"ju-jitsu|jiu-jitsu|ju_jutsu|jujutsu",name:"ju.?jutsu|ju.?jitsu",keys:["ju-jutsu", "jujutsu", "jiu jitsu", "ju jitsu"]}]
  ]],
  ["Wassersport",false,[
-  ["schwimmen","Schwimmen",{osm:"swimming",extra:['["leisure"="swimming_pool"]["name"]','["leisure"="water_park"]','["leisure"="bathing_place"]'],keys:["schwimmen","schwimmbad","hallenbad","freibad","baden"]}],
+  ["schwimmen","Schwimmen",{osm:"swimming",extra:['["leisure"="swimming_pool"]["name"]','["leisure"="water_park"]','["leisure"="bathing_place"]'],keys:["schwimmen","schwimmbad","hallenbad","freibad","baden","rettungsschwimmen","dlrg"]}],
   ["rudern","Rudern",{osm:"rowing",keys:["rudern"]}],
-  ["kanu","Kanu & Kajak",{osm:"canoe|kayak",keys:["kanu","kajak","paddeln"]}],
+  ["kanu","Kanu & Kajak",{osm:"canoe|kayak|dragon_boat",keys:["kanu","kajak","paddeln","drachenboot"]}],
   ["sup","Stand-Up-Paddling",{osm:"stand_up_paddleboarding|paddle_boarding|sup",name:"sup",keys:["sup","stand up","stand-up"]}],
   ["segeln","Segeln",{osm:"sailing",keys:["segeln"]}],
-  ["tauchen","Tauchen",{osm:"scuba_diving|diving|free_diving",keys:["tauchen"]}]
+  ["tauchen","Tauchen",{osm:"scuba_diving|diving|free_diving",keys:["tauchen"]}],
+  ["wasserball","Wasserball",{osm:"water_polo",keys:["wasserball", "water polo"]}],
+  ["surfen","Surfen & Wellenreiten",{osm:"surfing",name:"surf",keys:["surfen", "wellenreiten", "surf", "flusssurfen", "indoor surfen"]}],
+  ["windkite","Windsurfen & Kitesurfen",{osm:"windsurfing|kitesurfing|kiteboarding",name:"kite|windsurf",keys:["windsurfen", "kitesurfen", "kiten", "kiteboarden"]}],
+  ["wakeboard","Wasserski & Wakeboard",{osm:"water_ski|waterskiing|wakeboarding|cable_skiing",name:"wasserski|wakeboard",keys:["wasserski", "wakeboard", "wakeboarden", "cable park"]}]
  ]],
  ["Outdoor & Rollsport",false,[
-  ["laufen","Laufen & Leichtathletik",{osm:"running|athletics|jogging",keys:["laufen","joggen","leichtathletik","laufbahn","running"]}],
+  ["laufen","Laufen & Leichtathletik",{osm:"running|athletics|jogging|orienteering|nordic_walking",keys:["laufen","joggen","leichtathletik","laufbahn","running","orientierungslauf","nordic walking","lauftreff"]}],
   ["radsport","Radsport, BMX & Pumptrack",{osm:"cycling|bmx|mtb|pumptrack",keys:["radsport","rennrad","bmx","pumptrack","mountainbike","mtb","radfahren"]}],
   ["skaten","Skaten & Inline",{osm:"skateboard|roller_skating|inline_skates|scooter",keys:["skaten","skate","skateboard","skatepark","inliner","inline","rollschuh"]}],
   ["klettern","Klettern & Bouldern",{osm:"climbing|bouldering|climbing_adventure",name:"boulder|kletter",keys:["klettern","bouldern","boulder","kletterhalle","hochseilgarten"]}],
@@ -321,14 +350,26 @@ const GROUPS=[
   ["reiten","Reiten",{osm:"equestrian",extra:['["leisure"="horse_riding"]'],keys:["reiten","reitstall","pferd"]}],
   ["eislaufen","Eislaufen & Eishockey",{osm:"ice_skating|ice_hockey",extra:['["leisure"="ice_rink"]'],keys:["eislaufen","schlittschuh","eishockey","eishalle"]}],
   ["bogen","Bogenschießen",{osm:"archery",keys:["bogenschießen","bogenschiessen","bogen"]}],
-  ["schiessen","Schießsport",{osm:"shooting",keys:["schießen","schiessen","schützenverein","schießsport"]}]
+  ["schiessen","Schießsport",{osm:"shooting",keys:["schießen","schiessen","schützenverein","schießsport"]}],
+  ["triathlon","Triathlon",{osm:"triathlon",name:"triathlon",keys:["triathlon", "duathlon"]}],
+  ["wintersport","Ski, Langlauf & Snowboard",{osm:"skiing|snowboard|biathlon|ski_jumping|nordic_skiing",name:"skihalle|skiclub|ski-club|snowboard|skidome",keys:["ski", "skifahren", "langlauf", "snowboard", "skihalle", "biathlon"]}],
+  ["rodeln","Rodeln, Bob & Sommerrodelbahn",{osm:"toboggan|bobsleigh|luge|sledding|summer_toboggan",name:"rodel|sommerrodel",keys:["rodeln", "sommerrodelbahn", "schlitten", "bob"]}],
+  ["slackline","Slackline",{osm:"slackline",keys:["slackline", "slacklinen"]}],
+  ["motorsport","Kart & Motorsport",{osm:"karting|motor|motocross|motorcycle_racing|rc_car",name:"kart|motocross",keys:["kart", "kartbahn", "go-kart", "motocross", "motorsport"]}],
+  ["luftsport","Segelflug, Paragliding & Bodyflying",{osm:"gliding|paragliding|hang_gliding|parachuting|free_flying|skydiving",name:"segelflug|luftsport|gleitschirm|paraglid|bodyflying|indoor.?skydiv",keys:["segelflug", "paragliding", "gleitschirm", "fallschirmspringen", "bodyflying", "indoor skydiving", "drachenfliegen"]}],
+  ["curling","Curling & Eisstockschießen",{osm:"curling|ice_stock",name:"curling|eisstock",keys:["curling", "eisstock", "eisstockschießen", "stockschießen"]}],
+  ["hundesport","Hundesport & Agility",{osm:"dog_agility|dog_training|canicross",name:"hundesport|hundeplatz|agility",keys:["hundesport", "agility", "hundeschule", "canicross", "dog dance"]}]
  ]],
  ["Freizeit & Präzision",false,[
   ["bowling","Bowling & Kegeln",{osm:"bowling|10pin|9pin",extra:['["leisure"="bowling_alley"]'],keys:["bowling","kegeln","kegelbahn"]}],
-  ["boule","Boule & Boccia",{osm:"boules|petanque|bocce",keys:["boule","boules","boccia","petanque"]}],
+  ["boule","Boule & Boccia",{osm:"boules|petanque|bocce|crossboccia",keys:["boule","boules","boccia","petanque","crossboccia"]}],
   ["billard","Billard",{osm:"billiards",keys:["billard","pool billard","snooker"]}],
   ["darts","Darts",{osm:"darts",keys:["darts","dart"]}],
-  ["schach","Schach",{osm:"chess",keys:["schach"]}]
+  ["schach","Schach",{osm:"chess",keys:["schach"]}],
+  ["lasertag","Lasertag",{osm:"laser_tag|lasertag",name:"laser.?tag",keys:["lasertag", "laser tag"]}],
+  ["paintball","Paintball & Airsoft",{osm:"paintball|airsoft",name:"paintball|airsoft",keys:["paintball", "airsoft"]}],
+  ["tischfussball","Tischfußball",{osm:"table_soccer|foosball",keys:["tischfußball", "tischfussball", "kicker", "tischkicker"]}],
+  ["cornhole","Cornhole",{osm:"cornhole",keys:["cornhole"]}]
  ]]
 ];
 const SPORTS={};
