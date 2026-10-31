@@ -127,7 +127,17 @@ KEEP = ["name", "operator", "leisure", "amenity", "club", "access", "fee", "surf
         "contact:phone", "website", "contact:website", "url"]
 
 
+# Name verrät ein Spezialstudio -> "leisure=fitness_centre" allein macht es nicht zum Fitnessstudio
+SPECIAL_STUDIO = re.compile(r"yoga|pilates|pole|tanz|dance|ballett|box|kampf|karate|judo|taekwondo|\bems\b|bodystreet|"
+                            r"crossfit|kletter|boulder|aerial|barre|jumping|spinning|cycling|tai.?chi|qi.?gong|physio|reha\b|ergo", re.I)
+NOT_SPORT_NAME = re.compile(r"\badfc\b|fahrrad.?club|decathlon|intersport|sport.?scheck|kletterladen|\bshop\b", re.I)
+CLIMB_NAME = re.compile(r"kletter|boulder|climb|alpenverein|\bdav\b|bloc|wand|wände|fels", re.I)
+CLIMB_ROUTE = {"route", "route_bottom", "route_top", "boulder", "boulder_problem", "multipitch", "pitch"}
+
+
 def sports_of(t):
+    if t.get("shop") or t.get("office") or t.get("craft") or NOT_SPORT_NAME.search(t.get("name") or ""):
+        return []
     found = set()
     for v in re.split(r"\s*;\s*", t.get("sport", "")):
         found |= SPORT_VAL.get(v, set())
@@ -138,6 +148,30 @@ def sports_of(t):
         if key in NAME_RX and t.get("name") and (t.get("leisure") or t.get("amenity") or t.get("club")):
             if NAME_RX[key].search(t["name"]):
                 found.add(key)
+    sport_vals = [v for v in re.split(r"\s*;\s*", t.get("sport", "")) if v]
+    name = t.get("name") or ""
+    # Fitnessstudio nur, wenn es eins ist: Yoga-/Tanz-/Kampfsportstudios mit leisure=fitness_centre raus
+    if "fitness" in found and not (set(sport_vals) & {"fitness", "weightlifting", "bodybuilding"}):
+        if (sport_vals or SPECIAL_STUDIO.search(name)) and not re.search(r"fitness|gym|kraft", name, re.I):
+            found.discard("fitness")
+    # Klettern: keine einzelnen Routen/Boulder, keine Klettergerüste auf Spielplätzen, keine Gemischt-Anlagen
+    if "klettern" in found:
+        lei = t.get("leisure")
+        ok = True
+        if t.get("climbing") in CLIMB_ROUTE or t.get("climbing:route") or t.get("climbing:boulder") == "yes" and not lei:
+            ok = False
+        elif lei in ("playground", "park", "garden", "recreation_ground", "schoolyard"):
+            ok = False
+        elif lei in ("sports_centre", "sports_hall", "stadium", "pitch", "fitness_centre", "track") or not lei:
+            first2 = set(sport_vals[:2])
+            climb_first = bool(first2 & {"climbing", "bouldering", "climbing_adventure"})
+            crag = t.get("climbing") in ("crag", "area", "site") or t.get("natural") in ("cliff", "rock", "bare_rock")
+            if not (CLIMB_NAME.search(name) or climb_first or crag or t.get("club")):
+                ok = False
+            if not lei and not t.get("club") and not crag and not CLIMB_NAME.search(name):
+                ok = False
+        if not ok:
+            found.discard("klettern")
     return sorted(found)
 
 

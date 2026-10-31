@@ -44,7 +44,7 @@ CAT_RULES = [
     ("fitness",     r"(^|[^a-z])gyms?([^a-z]|$)|fitness.?(cent|studio|club)|health.?club|weight.?lift|bodybuild"),
     ("calisthenics",r"calisthenic|outdoor.?gym|fitness.?trail"),
     ("trampolin",   r"trampoline"),
-    ("schwimmen",   r"swim|aquatic|public.?bath|water.?park|lido|thermal.?bath"),
+    ("schwimmen",   r"swim|aquatic|public.?bath(?!room)|water.?park|lido|thermal.?bath"),
     ("klettern",    r"climb|boulder|rope.?course|high.?ropes"),
     ("tischtennis", r"table.?tennis|ping.?pong"),
     ("tennis",      r"tennis"),
@@ -69,12 +69,12 @@ CAT_RULES = [
     ("baseball",    r"baseball|softball"),
     ("cricket",     r"cricket"),
     ("laufen",      r"running|athletic|track.?and.?field|jogging"),
-    ("radsport",    r"cycling|bike.?park|bmx|pump.?track|velodrome|mountain.?bik"),
+    ("radsport",    r"(?<!re)(?<!re_)cycling|bike.?park(?!ing)|bmx|pump.?track|velodrome|mountain.?bik"),  # nicht: recycling, bike_parking
     ("rudern",      r"rowing"),
     ("kanu",        r"canoe|kayak"),
     ("sup",         r"paddle.?board|stand.?up.?paddl|\bsup\b"),
     ("segeln",      r"sailing|yacht.?club"),
-    ("tauchen",     r"scuba|diving"),
+    ("tauchen",     r"scuba|(?<!sky)(?<!sky_)(?<!sky )diving"),  # nicht: skydiving
     ("bogen",       r"archery"),
     ("schiessen",   r"shooting|gun.?club|rifle"),
     ("boule",       r"boule|bocce|petanque|boccia"),
@@ -92,7 +92,7 @@ CAT_RULES = [
     ("poledance", r"pole.?danc|pole.?fitness"),
     ("aerial", r"aerial"),
     ("barre", r"\bbarre\b"),
-    ("indoorcycling", r"spin.?class|spinning|indoor.?cycl|cycling.?studio"),
+    ("indoorcycling", r"spin.?class|spinning|indoor.?cycl|cycling.?studio|cycling.?class"),
     ("ems", r"\bems\b|electro.?muscle"),
     ("jumping", r"jumping.?fitness"),
     ("aquafitness", r"aqua.?(fit|aerob|gym|cycl)|water.?aerobic"),
@@ -130,7 +130,7 @@ STRIP = {
     "golf": re.compile(r"mini.?golf|miniature.?golf|adventure.?golf|disc.?golf|foot.?golf", re.I),
     "hockey": re.compile(r"ice.?hockey", re.I),
     "fussball": re.compile(r"american.?football|flag.?football|table.?football|table.?soccer|foot.?golf", re.I),
-    "radsport": re.compile(r"indoor.?cycl|cycling.?studio|spin.?class", re.I),
+    "radsport": re.compile(r"indoor.?cycl|cycling.?studio|cycling.?class|spin.?class", re.I),
     "fitness": re.compile(r"pole.?fitness|aqua.?fit\w*|jumping.?fitness", re.I),
     "yoga": re.compile(r"aerial.?yoga|acro.?yoga", re.I),
     "kampfsport": re.compile(r"brazilian.?jiu.?jitsu", re.I),
@@ -140,7 +140,22 @@ STRIP = {
 EXCLUDE = re.compile(r"store|shop|retail|wholesale|supplier|supply|manufactur|repair|rental|dealer|"
                      r"clothing|apparel|equipment|bar\b|pub\b|restaurant|cafe|hotel|school_district|"
                      r"physician|doctor|clinic|hospital|pharmacy|veterinar|tattoo|nail|hair|beauty|"
-                     r"real.?estate|insurance|bank|attorney|lawyer|car\b|automotive|gas.?station", re.I)
+                     r"real.?estate|insurance|bank|attorney|lawyer|car\b|automotive|gas.?station|"
+                     r"recycl|parking|waste|disposal|scrap|contractor|construction|toilet|restroom|climbing_service", re.I)
+
+# Namen, die nie ein Sportangebot sind (Fundstücke aus der Prüfung Okt. 2026)
+EXCLUDE_NAME = re.compile(
+    r"\badfc\b|fahrrad.?club|recycling|entsorgung|schrott|containerdienst|wertstoff|altmetall|metallhandel|"
+    r"abstell|stellplatz|fahrradstation|radstation|fahrradbox|fahrradgarage|fahrradparkhaus|ladestation|ladesäule|"
+    r"kletterladen|bergsport.?laden|\bshop\b|decathlon|intersport|sport.?scheck|anlagenbau|"
+    r"schreibbüro|kopier|lektorat|poolbau|schwimmbadbau|schwimmbadtechnik|desjoyaux|\bpools? gmbh|sanifair|"
+    r"physio|ergotherap|\bpraxis\b|beckenboden|partytreff|party.?arena|diskothek|\bdisco\b|nachtclub|"
+    r"klettergerüst|kletterspielplatz|spielplatz", re.I)
+# Tanz: "dance_club" ist bei Overture meist eine Disco, "opera_and_ballet" ein Opernhaus
+NIGHT_CAT = re.compile(r"dance.?club|night.?club|disco|opera", re.I)
+DANCE_NAME = re.compile(r"tanz|dance.?(studio|school|academy|center|centre|company|crew)|ballett|ballet.?school|\btsc\b|\btsa\b|\btsg\b.*tanz|salsa|tango|zumba|hip.?hop|latin", re.I)
+# Bäder: "public_bath_house" sind oft Toiletten-/Sanitäranlagen
+BATH_NAME = re.compile(r"bad\b|bäder|therme|schwimm|sauna|hallen|frei|see\b|aqua|spa\b|baths?\b", re.I)
 
 # Allgemeine Sport-Kategorien: Sportart dann aus dem Namen erraten
 GENERIC = re.compile(r"sports?.?club|sports?.?(and|&).?recreation|sports?.?centre|sports?.?center|"
@@ -218,12 +233,12 @@ STUDIO_SPECIALS = {"poledance", "aerial", "barre", "indoorcycling", "ems", "jump
 
 CLUB_CAT = re.compile(r"club|league|association|team|verein|federation", re.I)
 CLUB_NAME = re.compile(r"\be\.\s?v\.|verein|\b(tus|sv|tv|sc|djk|bc|ttc|tc|vfl|vfb|spvgg|fc|tsv|ssv|bv|sg|tg|ttv|bsv|esv|htc|thc|sf|ksv|asv|psv|hsv|rsv|tsg)\b", re.I)
-FIELD_CAT = re.compile(r"court|field|pitch|skate.?park|outdoor|trail|park\b|playground|beach|lake|bathing", re.I)
+FIELD_CAT = re.compile(r"court|field|pitch|skate.?park|outdoor|trail|park\b|playground|beach|lake|bathing|climbing.?spot|crag|climbing.?area|bike.?park", re.I)
 
 
 def sports_for(cat_text, name):
     cat_text = cat_text or ""
-    if EXCLUDE.search(cat_text):
+    if EXCLUDE.search(cat_text) or EXCLUDE_NAME.search(name or ""):
         return []
     found = [k for k, rx in CAT_RULES if rx.search(STRIP[k].sub(" ", cat_text) if k in STRIP else cat_text)]
     if not found and GENERIC.search(cat_text):
@@ -240,6 +255,19 @@ def sports_for(cat_text, name):
         by_name = [k for k, rx in NAME_RULES if k != "fitness" and k in APP_SPORTS and rx.search(name or "")]
         if by_name and not re.search(r"fitness|gym|kraft", name or "", re.I):
             found = by_name
+    # Discos und Opernhäuser sind keine Tanzschulen
+    if "tanzen" in found and NIGHT_CAT.search(cat_text) and not DANCE_NAME.search(name or ""):
+        found.remove("tanzen")
+    # Sanitäranlagen ("public bath house") nur, wenn der Name nach Bad klingt
+    if "schwimmen" in found and re.search(r"public.?bath", cat_text, re.I) and not re.search(r"swim|aquatic|water.?park|lido", cat_text, re.I) \
+            and not BATH_NAME.search(name or ""):
+        found.remove("schwimmen")
+    # Yoga-, Pilates-, Tanz- und Kampfsportstudios, die zusätzlich als "gym" geführt werden, sind kein Fitnessstudio
+    if "fitness" in found and not re.search(r"fitness|gym|kraft|muckibude", name or "", re.I):
+        spec = [k for k, rx in NAME_RULES if k in ("yoga", "pilates", "tanzen", "kampfsport", "boxen", "klettern", "poledance",
+                                                   "aerial", "barre", "ems", "taichi", "crossfit", "schwimmen") and rx.search(name or "")]
+        if spec:
+            found = [k for k in found if k != "fitness"] + spec
     # "Climbing Gym" o. Ä. ist kein Fitnessstudio
     if "fitness" in found and len(found) > 1 and not re.search(r"fitness|health.?club|weight|bodybuild", cat_text, re.I):
         found.remove("fitness")
