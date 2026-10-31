@@ -56,3 +56,15 @@ create policy "eintragen" on tips     for insert with check (true);
 
 -- Alte "heute da"-Einträge aufräumen (optional, z. B. per Supabase-Cron täglich):
 -- delete from checkins where day < current_date - 1;
+
+-- Meldungen "Stimmt was nicht?" (Okt. 2026): nur eintragen, Lesen nur im Supabase-Dashboard.
+create table if not exists reports (
+  id uuid primary key default gen_random_uuid(),
+  place_id text not null, place_name text, lat double precision, lon double precision, sport text,
+  kind text not null check (kind in ('sportart','gibts_nicht','sonstiges')),
+  note text check (note is null or char_length(note) <= 200),
+  device text not null, created_at timestamptz not null default now()
+);
+alter table reports enable row level security;
+drop policy if exists "melden" on reports;
+create policy "melden" on reports for insert with check (true);

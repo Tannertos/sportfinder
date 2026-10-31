@@ -55,7 +55,7 @@ CAT_RULES = [
     ("golf",        r"golf"),
     ("bowling",     r"bowling|kegel|skittle"),
     ("billard",     r"billiard|pool.?hall|snooker"),
-    ("darts",       r"\bdarts?\b"),
+    ("darts",       r"(^|[^a-z])darts?([^a-z]|$)"),
     ("reiten",      r"horse|equestrian|riding.?school"),
     ("eislaufen",   r"ice.?skat|ice.?rink|ice.?hockey|skating.?rink"),
     ("skaten",      r"skate.?park|skateboard|roller|inline"),
@@ -226,10 +226,18 @@ NAME_RULES = [
     ("paintball", r"paintball|airsoft"),
     ("tischfussball", r"tischfußball|tischfussball|tischkicker"),
     ("cornhole", r"cornhole"),
+    # --- Ergänzung Okt. 2026: Sportarten, die Overture nur als "gym"/"sports club" führt ---
+    ("padel", r"padel"),
+    ("squash", r"squash"),
+    ("crossfit", r"cross.?fit|hyrox|functional.?(training|fitness|gym)|\bbox\b.*fit"),
+    ("calisthenics", r"calisthenics|street.?workout"),
+    ("darts", r"\bdarts?\b|dart.?(club|verein|sport|liga)|steeldart|e-?dart"),
+    ("pickleball", r"pickleball"),
 ]
 NAME_RULES = [(k, re.compile(rx, re.I)) for k, rx in NAME_RULES]
 APP_SPORTS = {k for k, _ in CAT_RULES}
-STUDIO_SPECIALS = {"poledance", "aerial", "barre", "indoorcycling", "ems", "jumping", "aquafitness", "kraftsport", "parkour", "taichi"}
+STUDIO_SPECIALS = {"poledance", "aerial", "barre", "indoorcycling", "ems", "jumping", "aquafitness", "kraftsport", "parkour", "taichi",
+                   "crossfit", "calisthenics", "padel", "squash"}
 
 CLUB_CAT = re.compile(r"club|league|association|team|verein|federation", re.I)
 CLUB_NAME = re.compile(r"\be\.\s?v\.|verein|\b(tus|sv|tv|sc|djk|bc|ttc|tc|vfl|vfb|spvgg|fc|tsv|ssv|bv|sg|tg|ttv|bsv|esv|htc|thc|sf|ksv|asv|psv|hsv|rsv|tsg)\b", re.I)
@@ -255,6 +263,9 @@ def sports_for(cat_text, name):
         by_name = [k for k, rx in NAME_RULES if k != "fitness" and k in APP_SPORTS and rx.search(name or "")]
         if by_name and not re.search(r"fitness|gym|kraft", name or "", re.I):
             found = by_name
+    # Tennis-/Sportanlagen mit Padel/Squash/Pickleball im Namen ("Tennis & Padel Club")
+    if found and not EXCLUDE_NAME.search(name or ""):
+        found += [k for k, rx in NAME_RULES if k in ("padel", "squash", "pickleball") and rx.search(name or "")]
     # Discos und Opernhäuser sind keine Tanzschulen
     if "tanzen" in found and NIGHT_CAT.search(cat_text) and not DANCE_NAME.search(name or ""):
         found.remove("tanzen")
